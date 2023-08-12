@@ -61,14 +61,63 @@ impl Chunk {
         Chunk {code: Vec::new(), constants: Vec::new(), lines: Vec::new()}
     }
 
+    // pub fn write(&mut self, byte: u8, line: i32) {
+    //     self.code.push(byte);
+    //     self.lines.push(line);
+    // }
+
+    //compressed form of write line
     pub fn write(&mut self, byte: u8, line: i32) {
         self.code.push(byte);
-        self.lines.push(line);
+
+        let len = self.lines.len();
+
+        if len == 0 {
+            self.lines.push(line);
+            self.lines.push(1);
+            return;
+        }
+
+        let mut on_same_line = false;
+
+        if *self.lines.get(len - 2).unwrap() == line{
+                on_same_line = true;        
+        }
+
+        match on_same_line {
+            true => {
+                *self.lines.last_mut().unwrap() += 1;
+            }
+            false => {
+                self.lines.push(line);
+                self.lines.push(1);
+            }
+        }
     }
 
+    pub fn get_line(&self, instruction_index: usize) -> i32 {
+        let mut current_index = 0;
+        let mut current_line = 0;
+
+        for chunk in self.lines.chunks(2){
+            let line = chunk[0];
+            let run_length = chunk[1];
+
+            let next_index = current_index + run_length ;
+
+            if (instruction_index as i32) < next_index {
+                current_line = line;
+                break;
+            }
+
+            current_index = next_index;
+        }
+
+        current_line
+
+    }
     // add_constant returns u8 
-    pub fn add_constant(&mut self, value: Value) -> usize
-    {
+    pub fn add_constant(&mut self, value: Value) -> usize {
         self.constants.push(value);
         self.constants.len() - 1
     }

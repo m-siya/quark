@@ -17,10 +17,10 @@ pub fn disassemble_chunk(chunk: &Chunk, name: &str) {
 pub fn disassemble_instruction(chunk: &Chunk, offset: u8) -> u8 {
     print!("{} ", offset);
 
-    if offset > 0 && chunk.lines[offset as usize] == chunk.lines[offset as usize - 1] {
+    if offset > 0 && chunk.get_line(offset as usize) == chunk.get_line(offset as usize) {
         print!("  | ");
     } else {
-        print!("{} ", chunk.lines[offset as usize]);
+        print!("{} ", chunk.get_line(offset as usize));
     }
 
     let instruction = chunk.code[offset as usize];
