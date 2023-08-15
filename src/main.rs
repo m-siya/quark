@@ -9,6 +9,7 @@ use crate::chunk::{Chunk, OpCode};
 use crate::value::Value;
 use crate::vm::{VM, InterpretResult};
 
+use std::io::Write;
 use std::{env, io};
 
 fn main() {
@@ -59,6 +60,8 @@ fn main() {
 fn repl(vm: &mut VM) {
     loop {
         print!("> ");
+
+        std::io::stdout().flush().unwrap();
 
         let mut line = String::new();
 
