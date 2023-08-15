@@ -1,3 +1,6 @@
+
+use std::str;
+
 #[derive(PartialEq, Debug)]
 pub enum TokenType {
     //single-character tokens
@@ -59,7 +62,10 @@ impl<'a> Scanner <'a> {
     }
 
     fn advance(&mut self) -> Option<&u8>{
+        
         self.current += 1;
+        // print!(" {:?} ", str::from_utf8(&self.source[self.start..self.current]).unwrap());
+
         self.source.get(self.current - 1)
     }
 
@@ -87,18 +93,15 @@ impl<'a> Scanner <'a> {
 
     fn skip_whitespace(&mut self) {
         loop {
-            match self.source.get(self.current) {
-                Some(c) => match c{
-                    b' ' | b'\r' | b'\t' => {
-                        self.advance();
-                    },
-                    b'\n' => {
-                        self.line += 1;
-                        self.advance();
-                    }
-                    _ => break,
+            match self.peek() {
+                Some(b' ' | b'\t' | b'\r') => {
+                    self.advance();
                 },
-                _ => break
+                Some(b'\n') => {
+                    self.advance();
+                    self.line += 1;
+                },
+                _ => break,
             }
         }
     }
@@ -184,11 +187,13 @@ impl<'a> Scanner <'a> {
 
 
     pub fn scan_token(&mut self) -> Token {
+
+        self.skip_whitespace();
         self.start = self.current;
 
-        // if self.is_at_end() {
-        //     return Token::make_token(TokenType::Eof, &self.source[self.start..self.current], self.line);
-        // }
+        if self.is_at_end() {
+            return Token::make_token(TokenType::Eof, &self.source[self.start..self.current], self.line);
+        }
 
 
 
@@ -198,7 +203,7 @@ impl<'a> Scanner <'a> {
                 b'(' => TokenType::LeftParen,
                 b')' => TokenType::RightParen,
                 b'{' => TokenType::LeftBrace,
-                b'}' => TokenType::LeftBrace,
+                b'}' => TokenType::RightBrace,
                 b';' => TokenType::Semicolon,
                 b',' => TokenType::Comma,
                 b'.' => TokenType::Dot,

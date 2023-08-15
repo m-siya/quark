@@ -82,9 +82,10 @@ impl VM {
 
         compile(source);
 
-        self.ip = 0;
-        let result: InterpretResult = self.run(&chunk);
-        result
+        // self.ip = 0;
+        // let result: InterpretResult = self.run(&chunk);
+        // result
+        InterpretResult::Ok
         
     }
 
