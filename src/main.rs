@@ -2,14 +2,18 @@ mod chunk;
 mod debug;
 mod value;
 mod vm;
+mod scanner;
+mod compiler;
 
 use crate::chunk::{Chunk, OpCode};
 use crate::value::Value;
 use crate::vm::{VM, InterpretResult};
 
+use std::{env, io};
+
 fn main() {
     // let mut chunk: Chunk = Chunk::new();
-    // let mut vm: VM = VM::new();
+    let mut vm: VM = VM::new();
 
     // let mut constant: usize = chunk.add_constant(Value::ValNumber(4.0));
     // chunk.write(OpCode::OpConstant as u8, 123);

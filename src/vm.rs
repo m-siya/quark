@@ -3,6 +3,7 @@ use std::fmt::Binary;
 use crate::debug;
 use crate::chunk::{Chunk, OpCode};
 use crate::value::Value;
+use crate::compiler::compile;
 //use crate::compiler::Compiler;
 
 pub enum InterpretResult {
@@ -71,13 +72,15 @@ impl VM {
         self.stack[self.stack.len() - depth - 1]
     }
  
-    pub fn interpret(&mut self, chunk: &Chunk) -> InterpretResult {
-        // let mut chunk: Chunk = Chunk::new();
+    pub fn interpret(&mut self, source: &str) -> InterpretResult {
+        let mut chunk: Chunk = Chunk::new();
        // let mut compiler = Compiler::new(&mut chunk);
         
-        // if compiler.compile(source).is_err() {
+        // if compile(source).is_err() {
         //     return InterpretResult::CompileError;
         // }
+
+        compile(source);
 
         self.ip = 0;
         let result: InterpretResult = self.run(&chunk);
