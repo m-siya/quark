@@ -74,18 +74,17 @@ impl VM {
  
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
         let mut chunk: Chunk = Chunk::new();
-       // let mut compiler = Compiler::new(&mut chunk);
+        let mut compiler = Compiler::new(&mut chunk);
         
-        // if compile(source).is_err() {
-        //     return InterpretResult::CompileError;
-        // }
+        if compile(source).is_err() {
+            return InterpretResult::CompileError;
+        }
 
         compile(source);
 
-        // self.ip = 0;
-        // let result: InterpretResult = self.run(&chunk);
-        // result
-        InterpretResult::Ok
+        self.ip = 0;
+        let result: InterpretResult = self.run(&chunk);
+        result
         
     }
 
