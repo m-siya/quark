@@ -318,9 +318,9 @@ impl <'a> Compiler<'a> {
         }
     }
 
-    fn consume(&mut self, token_type: TokenType, message: &str) {
+    fn consume(&mut self, _token_type: TokenType, message: &str) {
         match self.parser.current.token_type {
-            token_type => self.advance(),
+            _token_type => self.advance(),
             _ => self.error_at_current(message),
         };
     }
