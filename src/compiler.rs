@@ -1,6 +1,8 @@
 use crate::{scanner::{Token, TokenType, Scanner}, chunk::{Chunk, OpCode}, value::Value};
 use std::str;
 
+#[repr(u8)]
+#[derive(Copy, Clone, PartialEq, PartialOrd)]
 enum Precedence {
     None,
     Assignment, 
@@ -21,6 +23,33 @@ impl From<Precedence> for u8 {
     }
 }
 
+impl From<u8> for Precedence {
+    fn from(precedence: u8) -> Precedence {
+        match precedence {
+            1 => Precedence::None,
+            2 => Precedence::Assignment,
+            3 => Precedence::Or,
+            4 => Precedence::And,
+            5 => Precedence::Equality,
+            6 => Precedence::Comparison,
+            7 => Precedence::Term,
+            8 => Precedence::Factor,
+            9 => Precedence::Unary,
+            10 => Precedence::Call,
+            11 => Precedence::Primary,
+            _ => panic!("Error. Invalid Precedence code"),
+        }
+    }
+}
+
+type ParseFn = fn(&mut Compiler);
+#[derive(Copy, Clone)]
+struct ParseRule {
+    prefix: Option<ParseFn>,
+    infix: Option<ParseFn>,
+    precedence: Precedence,
+}
+
 struct Parser<'a> {
     current: Token<'a>,
     previous: Token<'a>,
@@ -28,13 +57,254 @@ struct Parser<'a> {
     panic_mode: bool,
 }
 
-pub struct Compiler<'a> {
-    chunk: &'a Chunk,
-    parser: Parser<'a>,
-    scanner: Scanner<'a>
+impl<'a> Parser<'a> {
+    pub fn new() -> Self {
+        Parser { current: Token::new() , previous: Token::new(), had_error: false, panic_mode: false}
+    }
 }
 
-impl Compiler<'_> {
+pub struct Compiler<'a> {
+    chunk: &'a mut Chunk,
+    parser: Parser<'a>,
+    scanner: Scanner<'a>,
+    rules: Vec<ParseRule>,
+}
+
+impl <'a> Compiler<'a> {
+    pub fn new(chunk: &'a mut Chunk, source: &'a str) -> Self {
+        let mut rules = vec![
+            ParseRule {
+                prefix: None,
+                infix: None,
+                precedence: Precedence::None,
+            }; TokenType::NumberOfTokens as usize 
+        ];
+
+        rules[TokenType::LeftParen as usize] = ParseRule {
+            prefix: Some(|compiler| compiler.grouping()),
+            infix: None,
+            precedence: Precedence::None,
+        };
+
+        rules[TokenType::RightParen as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::LeftBrace as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::RightBrace as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Comma as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Dot as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Minus as usize] = ParseRule {
+            prefix: Some(|compiler| compiler.unary()),
+            infix: Some(|compiler| compiler.binary()),
+            precedence: Precedence::Term,
+        };
+    
+        rules[TokenType::Plus as usize] = ParseRule {
+            prefix: None,
+            infix: Some(|compiler| compiler.binary()),
+            precedence: Precedence::Term,
+        };
+    
+        rules[TokenType::Semicolon as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Slash as usize] = ParseRule {
+            prefix: None,
+            infix: Some(|compiler| compiler.binary()),
+            precedence: Precedence::Factor,
+        };
+    
+        rules[TokenType::Star as usize] = ParseRule {
+            prefix: None,
+            infix: Some(|compiler| compiler.binary()),
+            precedence: Precedence::Factor,
+        };
+    
+        rules[TokenType::Bang as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::BangEqual as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Equal as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::EqualEqual as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Greater as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::GreaterEqual as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Less as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::LessEqual as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Identifier as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::String as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Number as usize] = ParseRule {
+            prefix: Some(|compiler| compiler.number()),
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::And as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Else as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::False as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Function as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::If as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Void as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Or as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Emit as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Return as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::True as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Create as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::While as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Error as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+    
+        rules[TokenType::Eof as usize] = ParseRule {
+            prefix: None,
+            infix: None,
+            precedence: Precedence::None,
+        };
+
+        Compiler { chunk: chunk, parser: Parser::new(), scanner: Scanner::new(source), rules: rules}
+
+
+    }
+
+    fn get_rule(&self, token_type: TokenType) -> Option<&ParseRule> {
+        self.rules.get::<usize>(token_type.into())
+    }
+
     fn advance(&mut self) {
         self.parser.previous = self.parser.current;
         
@@ -59,7 +329,40 @@ impl Compiler<'_> {
         self.parse_precedence(Precedence::Assignment);
     }
 
-    fn parse_precedence(&self, precedence: Precedence) {
+    fn parse_precedence(&mut self, precedence: Precedence) {
+        self.advance();
+
+        let rule = self.get_rule(self.parser.previous.token_type);
+
+        if rule.is_none() {
+            eprintln!("Invalid token. Syntax Error");
+            return;
+        }
+
+        let prefix_rule = rule.unwrap().prefix;
+
+        if prefix_rule.is_none() {
+            eprintln!("Expecting expression");
+            return;
+        }
+
+        prefix_rule.unwrap()(self);
+
+        while precedence <= self.get_rule(self.parser.current.token_type).unwrap().precedence {
+            self.advance();
+            let rule = self.get_rule(self.parser.previous.token_type);
+            if rule.is_none() {
+                eprintln!("Invalid token. Syntax Error");
+                return;
+            }
+            
+            let infix_rule = rule.unwrap().infix;
+            infix_rule.unwrap()(self);
+
+
+        }
+
+
 
     }
 
@@ -88,19 +391,20 @@ impl Compiler<'_> {
     }
 
     fn emit_constant(&mut self, value: Value) {
-        self.emit_bytes(OpCode::OpConstant.into(), self.make_constant(value));
+        let constant = self.make_constant(value);
+        self.emit_bytes(OpCode::OpConstant.into(), constant);
     }
 
     fn end_compiler(&mut self) {
         self.emit_return();
     }
 
-    fn number(&self) {
+    fn number(&mut self) {
         let value = str::from_utf8(self.parser.previous.lexeme).unwrap().parse::<f64>().unwrap();
         self.emit_constant(Value::ValNumber(value));
     }
 
-    fn unary(&self) {
+    fn unary(&mut self) {
         let operator_type = self.parser.previous.token_type;
 
         self.expression();
@@ -111,24 +415,50 @@ impl Compiler<'_> {
         }
     }
 
-    // fn binary(&self) {
-    //     let operator_type: TokenType = self.parser.previous.token_type;
-    //     let rule: ParseRule = get_rule(operator_type);
-        
-    // }
+    fn binary(&mut self) {
+        let operator_type: TokenType = self.parser.previous.token_type;
+        let rule: Option<&ParseRule> = self.get_rule(operator_type);
 
-    fn grouping(&self) {
+        if rule.is_none() {
+            eprintln!("Invalid token type and precedence not found in precedence rules");
+            return;
+        }
+
+        self.parse_precedence(Precedence::from(u8::from(rule.unwrap().precedence) + 1));
+        
+
+        match operator_type {
+            TokenType::Plus => {
+                self.emit_byte(OpCode::OpAdd.into());
+            },
+            TokenType::Minus => {
+                self.emit_byte(OpCode::OpSubtract.into());
+            },
+            TokenType::Star => {
+                self.emit_byte(OpCode::OpMultiply.into());
+            },
+            TokenType::Slash => {
+                self.emit_byte(OpCode::OpDivide.into());
+            },
+            _ => {
+                return;
+            }
+
+        }
+    }
+
+    fn grouping(&mut self) {
         self.expression();
         self.consume(TokenType::RightParen, "Expecting ')' after expression.");
 
     }
 
-    fn error_at_current(&self, message: &str) {
-        self.error_at(&self.parser.previous, message);
+    fn error_at_current(&mut self, message: &str) {
+        self.error_at(self.parser.previous, message);
 
     }
 
-    fn error_at(&self, token: &Token, message: &str) {
+    fn error_at(&mut self, token: Token, message: &str) {
         if self.parser.panic_mode {
             return
         }
@@ -154,8 +484,8 @@ impl Compiler<'_> {
 
     }
 
-    pub fn compile(&mut self, source: &str) -> bool {
-        let mut scanner = Scanner::new(source);
+    pub fn compile(&mut self) -> bool {
+        //let mut scanner = Scanner::new(source);
     
         // let mut line = -1;
     
@@ -180,6 +510,7 @@ impl Compiler<'_> {
         self.advance();
         self.expression();
         self.consume(TokenType::Eof, "Expecting end of expression");
+        self.end_compiler();
 
         !self.parser.had_error
 

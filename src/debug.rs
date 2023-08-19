@@ -22,7 +22,7 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: u8) -> u8 {
     } else {
         print!("{} ", chunk.get_line(offset as usize));
     }
-
+    
     let instruction = chunk.code[offset as usize];
     let code: OpCode = instruction.into();
     match code {

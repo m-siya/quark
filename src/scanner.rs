@@ -1,7 +1,7 @@
 
 use std::str;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum TokenType {
     //single-character tokens
     LeftParen, RightParen,
@@ -24,9 +24,18 @@ pub enum TokenType {
     Emit, Return, True, Create, 
     While,
 
-    Error, Eof
+    Error, Eof,
+
+    NumberOfTokens,
 }
 
+impl From<TokenType> for usize {
+    fn from(token_type: TokenType)  -> usize {
+        token_type as usize
+    }
+}
+
+#[derive(Clone, Copy)]
 pub struct Token<'a> {
     pub token_type: TokenType,
     // start: usize,
@@ -36,6 +45,10 @@ pub struct Token<'a> {
 }
 
 impl <'a> Token <'a> {
+    pub fn new() -> Self {
+        Token { token_type: TokenType::Eof, lexeme: b"", line: -1}
+    }
+
     fn make_token(token_type: TokenType, lexeme: &[u8], line: i32) -> Token{
         Token {token_type, lexeme, line}
     }
@@ -106,7 +119,7 @@ impl<'a> Scanner <'a> {
         }
     }
 
-    fn string(&mut self) -> Token {
+    fn string(&mut self) -> Token<'a>{
         while self.peek() != Some(&b'"') && (self.advance().is_some()) {
             if self.peek() == Some(&b'\n') {
                 self.line += 1;
@@ -123,7 +136,7 @@ impl<'a> Scanner <'a> {
         }
     }
 
-    fn number(&mut self) -> Token {
+    fn number(&mut self) -> Token<'a> {
         while self.peek().is_some() && self.peek().unwrap().is_ascii_digit() {
             self.advance();
         }
@@ -139,7 +152,7 @@ impl<'a> Scanner <'a> {
         Token::make_token(TokenType::Number, &self.source[self.start..self.current], self.line)
     }
 
-    fn identifier(&mut self) -> Token {
+    fn identifier(&mut self) -> Token<'a> {
         while self.peek().is_some() && (self.peek().unwrap().is_ascii_alphanumeric() || self.peek().unwrap() == &b'_') {
             self.advance();
         }
@@ -186,7 +199,7 @@ impl<'a> Scanner <'a> {
 
 
 
-    pub fn scan_token(&mut self) -> Token {
+    pub fn scan_token(&mut self) -> Token<'a> {
 
         self.skip_whitespace();
         self.start = self.current;

@@ -5,8 +5,8 @@ mod vm;
 mod scanner;
 mod compiler;
 
-use crate::chunk::{Chunk, OpCode};
-use crate::value::Value;
+//use crate::chunk::{Chunk, OpCode};
+//use crate::value::Value;
 use crate::vm::{VM, InterpretResult};
 
 use std::io::Write;
