@@ -91,6 +91,7 @@ impl VM {
             ($op:tt) => {
                 {
                     let op_r = self.peek(0);
+                    println!("this works");
                     let op_l = self.peek(1);
                     
                     match (op_r.is_number(), op_l.is_number()) {
@@ -172,7 +173,7 @@ impl VM {
                         }
                     }
                 }
-                OpCode::OpNil => self.push(Value::ValNil(())),
+                OpCode::OpVoid => self.push(Value::ValVoid(())),
                 OpCode::OpTrue => self.push(Value::ValBool(true)),
                 OpCode::OpFalse => self.push(Value::ValBool(false)),
                 OpCode::OpEqual => {

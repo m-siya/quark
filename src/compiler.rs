@@ -147,15 +147,15 @@ impl <'a> Compiler<'a> {
         };
     
         rules[TokenType::Bang as usize] = ParseRule {
-            prefix: None,
+            prefix: Some(|compiler| compiler.unary()),
             infix: None,
             precedence: Precedence::None,
         };
     
         rules[TokenType::BangEqual as usize] = ParseRule {
             prefix: None,
-            infix: None,
-            precedence: Precedence::None,
+            infix:  Some(|compiler| compiler.binary()),
+            precedence: Precedence::Equality,
         };
     
         rules[TokenType::Equal as usize] = ParseRule {
@@ -166,32 +166,32 @@ impl <'a> Compiler<'a> {
     
         rules[TokenType::EqualEqual as usize] = ParseRule {
             prefix: None,
-            infix: None,
-            precedence: Precedence::None,
+            infix:  Some(|compiler| compiler.binary()),
+            precedence: Precedence::Equality,
         };
     
         rules[TokenType::Greater as usize] = ParseRule {
             prefix: None,
-            infix: None,
-            precedence: Precedence::None,
+            infix:  Some(|compiler| compiler.binary()),
+            precedence: Precedence::Comparison,
         };
     
         rules[TokenType::GreaterEqual as usize] = ParseRule {
             prefix: None,
-            infix: None,
-            precedence: Precedence::None,
+            infix:  Some(|compiler| compiler.binary()),
+            precedence: Precedence::Comparison,
         };
     
         rules[TokenType::Less as usize] = ParseRule {
             prefix: None,
-            infix: None,
-            precedence: Precedence::None,
+            infix:  Some(|compiler| compiler.binary()),
+            precedence: Precedence::Comparison,
         };
     
         rules[TokenType::LessEqual as usize] = ParseRule {
             prefix: None,
-            infix: None,
-            precedence: Precedence::None,
+            infix:  Some(|compiler| compiler.binary()),
+            precedence: Precedence::Comparison,
         };
     
         rules[TokenType::Identifier as usize] = ParseRule {
@@ -225,7 +225,7 @@ impl <'a> Compiler<'a> {
         };
     
         rules[TokenType::False as usize] = ParseRule {
-            prefix: None,
+            prefix: Some(|compiler| compiler.literal()),
             infix: None,
             precedence: Precedence::None,
         };
@@ -243,7 +243,7 @@ impl <'a> Compiler<'a> {
         };
     
         rules[TokenType::Void as usize] = ParseRule {
-            prefix: None,
+            prefix: Some(|compiler| compiler.literal()),
             infix: None,
             precedence: Precedence::None,
         };
@@ -267,7 +267,7 @@ impl <'a> Compiler<'a> {
         };
     
         rules[TokenType::True as usize] = ParseRule {
-            prefix: None,
+            prefix: Some(|compiler| compiler.literal()),
             infix: None,
             precedence: Precedence::None,
         };
@@ -361,10 +361,21 @@ impl <'a> Compiler<'a> {
 
 
         }
+        // self.advance();
+        // if let Some(prefix_rule) = self.rules[self.parser.previous.token_type as usize].prefix {
+        //     prefix_rule(self);
 
-
-
+        //     while precedence <= self.rules[self.parser.current.token_type as usize].precedence {
+        //         self.advance();
+        //         if let Some(infix_rule) = self.rules[self.parser.previous.token_type as usize].infix {
+        //             infix_rule(self);
+        //         }
+        //     }
+        // } else {
+        //     println!("Expect expression");
+        // }
     }
+
 
     // append a single byte to the chunk
     fn emit_byte(&mut self, byte: u8){
@@ -411,6 +422,7 @@ impl <'a> Compiler<'a> {
 
         match operator_type {
             TokenType::Minus => self.emit_byte(OpCode::OpNegate.into()),
+            TokenType::Bang => self.emit_byte(OpCode::OpNot.into()),
             _ => return,
         }
     }
@@ -428,6 +440,12 @@ impl <'a> Compiler<'a> {
         
 
         match operator_type {
+            TokenType::BangEqual => self.emit_bytes(OpCode::OpEqual.into(), OpCode::OpNot.into()),
+            TokenType::EqualEqual => self.emit_byte(OpCode::OpEqual.into()),
+            TokenType::Greater => self.emit_byte(OpCode::OpGreater.into()),
+            TokenType::GreaterEqual => self.emit_bytes(OpCode::OpLess.into(), OpCode::OpNot.into()),
+            TokenType::Less => self.emit_byte(OpCode::OpLess.into()),
+            TokenType::LessEqual => self.emit_bytes(OpCode::OpGreater.into(), OpCode::OpNot.into()),
             TokenType::Plus => {
                 self.emit_byte(OpCode::OpAdd.into());
             },
@@ -440,6 +458,7 @@ impl <'a> Compiler<'a> {
             TokenType::Slash => {
                 self.emit_byte(OpCode::OpDivide.into());
             },
+
             _ => {
                 return;
             }
@@ -451,6 +470,17 @@ impl <'a> Compiler<'a> {
         self.expression();
         self.consume(TokenType::RightParen, "Expecting ')' after expression.");
 
+    }
+
+    fn literal(&mut self) {
+        match self.parser.previous.token_type {
+            TokenType::False => self.emit_byte(OpCode::OpFalse.into()),
+            TokenType::Void => self.emit_byte(OpCode::OpVoid.into()),
+            TokenType::True => self.emit_byte(OpCode::OpTrue.into()),
+            _ => {
+                return;
+            }
+        }
     }
 
     fn error_at_current(&mut self, message: &str) {

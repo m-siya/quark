@@ -3,7 +3,7 @@ use std::ops::{Neg, Add, Sub, Mul, Div, Not};
 #[derive(Copy, Clone, PartialEq)]
 pub enum Value {
     ValBool(bool),
-    ValNil(()),
+    ValVoid(()),
     ValNumber(f64),
 }
 
@@ -28,7 +28,7 @@ impl From<Value> for f64 {
 impl From<Value> for () {
     fn from(value: Value) -> () {
         match value {
-            Value::ValNil(nil_val) => nil_val,
+            Value::ValVoid(void_val) => void_val,
             _ => panic!("Error. Value is not nill"),
         }
     }
@@ -47,8 +47,8 @@ impl From<f64> for Value {
 }
 
 impl From<()> for Value {
-    fn from(nil_val: ()) -> Value {
-        Value::ValNil(nil_val)
+    fn from(void_val: ()) -> Value {
+        Value::ValVoid(void_val)
     }
 }
 
@@ -158,7 +158,7 @@ impl Value {
     pub fn print_value(&self) {
         match *self {
             Value::ValBool(boolean) => print!("'{}'", boolean),
-            Value::ValNil(()) => print!("'nil'"),
+            Value::ValVoid(()) => print!("'nil'"),
             Value::ValNumber(val) => print!("'{}'", val),
             _ => panic!("Value not recognised, cannot print"),
         }

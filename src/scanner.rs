@@ -83,17 +83,25 @@ impl<'a> Scanner <'a> {
     }
 
     fn match_(&mut self, _expected: u8) -> bool {
-
         match self.source.get(self.current) {
             None => false,
-            Some(c) => match c {
-                _expected => {
+            Some(c) => {
+                if c == &_expected {
                     self.current += 1;
                     true
-                },
-                _ => false
+                } else {
+                    false
+                }
             },
         }
+
+        // match self.source.get(self.current) {
+        //     Some(actual) if actual == &_expected => {
+        //         self.current += 1;
+        //         true
+        //     }
+        //     _ => false,
+        // }
     }
 
     fn peek(&self) -> Option<&u8> {
