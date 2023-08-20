@@ -175,7 +175,7 @@ impl Value {
 
 
     pub fn print_value(&self) {
-        match *self {
+        match self {
             Value::ValBool(boolean) => print!("'{}'", boolean),
             Value::ValVoid(()) => print!("'nil'"),
             Value::ValNumber(val) => print!("'{}'", val),

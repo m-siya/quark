@@ -128,7 +128,7 @@ impl<'a> Scanner <'a> {
     }
 
     fn string(&mut self) -> Token<'a>{
-        while self.peek() != Some(&b'"') && (self.advance().is_some()) {
+        while self.peek() != Some(&b'"') && !self.is_at_end() {
             if self.peek() == Some(&b'\n') {
                 self.line += 1;
             }
@@ -136,7 +136,7 @@ impl<'a> Scanner <'a> {
             self.advance();
         }
 
-        if self.advance().is_none() {
+        if self.is_at_end() {
             Token::make_error_token("Unterminated String", self.line)
         } else {
             self.advance();

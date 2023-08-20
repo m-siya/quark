@@ -122,8 +122,8 @@ impl Chunk {
         self.constants.len() - 1
     }
 
-    pub fn get_constant(&self, index: usize) -> Value {
-        self.constants[index]
+    pub fn get_constant(&self, index: usize) -> &Value {
+        &self.constants[index]
     }
 
 }

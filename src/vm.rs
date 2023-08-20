@@ -50,7 +50,7 @@ impl VM {
         
     }
 
-    fn read_constant(&mut self, chunk: &Chunk) -> Value {
+    fn read_constant<'a>(&'a mut self, chunk: &'a Chunk) -> &Value {
         let index: usize = chunk.code[self.ip] as usize;
         self.ip += 1;
        // chunk.constants[index]
@@ -70,8 +70,8 @@ impl VM {
         }
     }
 
-    fn peek(&self, depth: usize) -> Value {
-        self.stack[self.stack.len() - depth - 1]
+    fn peek(&self, depth: usize) -> &Value {
+        &self.stack[self.stack.len() - depth - 1]
     }
     
     fn concatenate(&mut self) {
@@ -155,7 +155,7 @@ impl VM {
                 }
 
                 OpCode::OpConstant => {
-                    let constant = self.read_constant(chunk);
+                    let constant = self.read_constant(chunk).clone();
                     self.push(constant);
                     //println!("{}", constant);  
                 }
