@@ -1,4 +1,4 @@
-use crate::{scanner::{Token, TokenType, Scanner}, chunk::{Chunk, OpCode}, value::Value};
+use crate::{scanner::{Token, TokenType, Scanner}, chunk::{Chunk, OpCode}, value::Value, object::Object};
 use std::str;
 
 #[repr(u8)]
@@ -201,7 +201,7 @@ impl <'a> Compiler<'a> {
         };
     
         rules[TokenType::String as usize] = ParseRule {
-            prefix: None,
+            prefix: Some(|compiler| compiler.string()),
             infix: None,
             precedence: Precedence::None,
         };
@@ -481,6 +481,14 @@ impl <'a> Compiler<'a> {
                 return;
             }
         }
+    }
+
+    fn string(&mut self) {
+        self.emit_constant(Value::ValObject(
+            Object::from_str(
+                str::from_utf8(
+                    self.parser.previous.lexeme).unwrap_or("")
+                    .trim_start_matches('"').trim_end_matches('"'))));
     }
 
     fn error_at_current(&mut self, message: &str) {

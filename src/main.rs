@@ -4,6 +4,7 @@ mod value;
 mod vm;
 mod scanner;
 mod compiler;
+mod object;
 
 //use crate::chunk::{Chunk, OpCode};
 //use crate::value::Value;
@@ -51,7 +52,7 @@ fn main() {
         },
         _ => {
             println!("Incorrect arguments.");
-            println!("Usage: bite [path]");
+            println!("Usage: quark [path]");
             std::process::exit(64);
         },
     }

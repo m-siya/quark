@@ -1,5 +1,8 @@
+use core::panic;
+
 use crate::debug;
 use crate::chunk::{Chunk, OpCode};
+use crate::object::Object;
 use crate::value::Value;
 use crate::compiler::Compiler;
 //use crate::compiler::Compiler;
@@ -27,11 +30,12 @@ pub struct VM {
     //chunk: Chunk,
     ip: usize, //indexes into the next instruction in the chunk
     stack: Vec<Value>,
+    heap: Vec<Object>,
 }
 
 impl VM {
     pub fn new() -> VM {
-        VM {ip: 0, stack: Vec::new()}
+        VM {ip: 0, stack: Vec::new(), heap: Vec::new()}
     }
 
     pub fn reset_stack(&mut self) {
@@ -69,7 +73,22 @@ impl VM {
     fn peek(&self, depth: usize) -> Value {
         self.stack[self.stack.len() - depth - 1]
     }
- 
+    
+    fn concatenate(&mut self) {
+        let op_r = self.pop();
+        let op_l = self.pop();
+
+        match (op_r, op_l) {
+            (Value::ValObject(object_right), Value::ValObject(object_left)) => {
+                let result = format!("{}{}", object_left.get_object_data().unwrap_or(""), object_right.get_object_data().unwrap_or(""));
+                self.push(Value::ValObject(Object::from_str(&result)));
+            },
+            (_, _) => {
+                panic!("Operands must be strings to concatenate");
+            }
+        }
+    }
+
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
         let mut chunk: Chunk = Chunk::new();
         let mut compiler = Compiler::new(&mut chunk, source);
@@ -140,9 +159,19 @@ impl VM {
                     self.push(constant);
                     //println!("{}", constant);  
                 }
-    
-                //before case OP_RETURN
-                OpCode::OpAdd => binary_op!(+),
+                OpCode::OpAdd => {
+                    let op_r = self.peek(0);
+                    let op_l = self.peek(1);
+
+                    match (op_r, op_l) {
+                        (Value::ValObject(Object::ObjString(_)), Value::ValObject(Object::ObjString(_))) => self.concatenate(),
+                        (Value::ValNumber(_), Value::ValNumber(_)) => binary_op!(+),
+                        (_, _) => {
+                            run_time_error!(chunk, self.ip, "Error: {}", "Operands must be numbers or strings");
+                            return InterpretResult::RuntimeError;
+                        },
+                    }
+                },
                 OpCode::OpSubtract => binary_op!(-),
                 OpCode::OpMultiply => binary_op!(*),
                 OpCode::OpDivide => binary_op!(/),

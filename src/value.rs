@@ -1,10 +1,13 @@
 use std::ops::{Neg, Add, Sub, Mul, Div, Not};
 
-#[derive(Copy, Clone, PartialEq)]
+use crate::object::Object;
+
+#[derive(Clone)]
 pub enum Value {
     ValBool(bool),
     ValVoid(()),
     ValNumber(f64),
+    ValObject(Object)
 }
 
 impl From<Value> for bool {
@@ -139,6 +142,15 @@ impl PartialOrd for Value {
     }
 }
 
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::ValObject(object), Value::ValObject(other_object)) => object.get_object_data() == other_object.get_object_data(),
+            (_, _) => self == other,
+        }
+    }
+}
+
 impl Value {
     pub fn is_number(&self) -> bool {
         match self {
@@ -154,13 +166,21 @@ impl Value {
         }
     }
 
+    pub fn is_object(&self) -> bool {
+        match self {
+            Value::ValObject(Object) => true,
+            _ => false,
+        }
+    }
+
 
     pub fn print_value(&self) {
         match *self {
             Value::ValBool(boolean) => print!("'{}'", boolean),
             Value::ValVoid(()) => print!("'nil'"),
             Value::ValNumber(val) => print!("'{}'", val),
-            _ => panic!("Value not recognised, cannot print"),
+            Value::ValObject(object) => print!("'{}'", object.get_object_data().unwrap_or("")),
+            //_ => panic!("Value not recognised, cannot print"),
         }
     }
 
