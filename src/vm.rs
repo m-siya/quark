@@ -2,7 +2,7 @@ use core::panic;
 
 use crate::debug;
 use crate::chunk::{Chunk, OpCode};
-use crate::object::Object;
+use crate::object::{Object, ObjString};
 use crate::value::Value;
 use crate::compiler::Compiler;
 //use crate::compiler::Compiler;
@@ -81,7 +81,7 @@ impl VM {
         match (op_r, op_l) {
             (Value::ValObject(object_right), Value::ValObject(object_left)) => {
                 let result = format!("{}{}", object_left.get_object_data().unwrap_or(""), object_right.get_object_data().unwrap_or(""));
-                self.push(Value::ValObject(Object::from_str(&result)));
+                self.push(Value::ValObject(Object::ObjString(ObjString::from_str(&result))));
             },
             (_, _) => {
                 panic!("Operands must be strings to concatenate");

@@ -1,4 +1,4 @@
-use crate::{scanner::{Token, TokenType, Scanner}, chunk::{Chunk, OpCode}, value::Value, object::Object};
+use crate::{scanner::{Token, TokenType, Scanner}, chunk::{Chunk, OpCode}, value::Value, object::{Object, ObjString}};
 use std::str;
 
 #[repr(u8)]
@@ -484,11 +484,25 @@ impl <'a> Compiler<'a> {
     }
 
     fn string(&mut self) {
-        self.emit_constant(Value::ValObject(
-            Object::from_str(
-                str::from_utf8(
-                    self.parser.previous.lexeme).unwrap_or("")
-                    .trim_start_matches('"').trim_end_matches('"'))));
+        self.emit_constant(
+            Value::ValObject(
+                Object::ObjString(
+                    ObjString::from_str(
+                        str::from_utf8(
+                            self.parser.previous.lexeme)
+                            .unwrap_or("")
+                            .trim_start_matches('"').trim_end_matches('"')
+                        )
+                    )
+                )
+            );
+            
+
+        // self.emit_constant(Value::ValObject(
+        //     Object::from_str(
+                // str::from_utf8(
+                //     self.parser.previous.lexeme).unwrap_or("")
+                //     .trim_start_matches('"').trim_end_matches('"'))));
     }
 
     fn error_at_current(&mut self, message: &str) {

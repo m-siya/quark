@@ -5,6 +5,7 @@ mod vm;
 mod scanner;
 mod compiler;
 mod object;
+mod table;
 
 //use crate::chunk::{Chunk, OpCode};
 //use crate::value::Value;
