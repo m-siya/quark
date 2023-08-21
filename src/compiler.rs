@@ -356,6 +356,31 @@ impl <'a> Compiler<'a> {
 
     fn declaration(&mut self) {
         self.statement();
+
+        if self.parser.panic_mode {
+            self.synchronize();
+        }
+    }
+
+    fn synchronize(&mut self) {
+        //hit compile error while parsing previous statement. start synchronizing
+
+        self.parser.panic_mode = false;
+
+        while self.parser.current.token_type != TokenType::Eof {
+            if self.parser.previous.token_type == TokenType::Semicolon {
+                return;
+            }
+
+            match self.parser.current.token_type {
+                TokenType::Function | TokenType::Create | TokenType::While | TokenType::Emit | TokenType::Return => {
+                    return;
+                },
+                _ => (),
+            }
+
+            self.advance();
+        }
     }
 
     fn statement(&mut self) {
