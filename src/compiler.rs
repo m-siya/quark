@@ -325,8 +325,45 @@ impl <'a> Compiler<'a> {
         };
     }
 
+    fn is_match(&mut self, token_type: TokenType) -> bool {
+        if !self.check(token_type) {
+            return false;
+        }
+
+        self.advance();
+        true
+    }
+
+    fn check(&self, token_type: TokenType) -> bool {
+        self.parser.current.token_type == token_type
+    }
+
     fn expression(&mut self) {
         self.parse_precedence(Precedence::Assignment);
+    }
+
+    fn expression_statement(&mut self) {
+        self.expression();
+        self.consume(TokenType::Semicolon, "Expecting ';' after expression");
+        self.emit_byte(OpCode::OpPop.into());
+    }
+
+    fn emit_statement(&mut self) {
+        self.expression();
+        self.consume(TokenType::Semicolon, "Expecting ';' after value.");
+        self.emit_byte(OpCode::OpEmit.into());
+    }
+
+    fn declaration(&mut self) {
+        self.statement();
+    }
+
+    fn statement(&mut self) {
+        if self.is_match(TokenType::Emit) {
+            self.emit_statement();
+        } else {
+            self.expression_statement();
+        }
     }
 
     fn parse_precedence(&mut self, precedence: Precedence) {
@@ -560,8 +597,13 @@ impl <'a> Compiler<'a> {
         // }
     
         self.advance();
-        self.expression();
-        self.consume(TokenType::Eof, "Expecting end of expression");
+        // self.expression();
+        // self.consume(TokenType::Eof, "Expecting end of expression");
+
+        while !self.is_match(TokenType::Eof) {
+            self.declaration();
+        }
+
         self.end_compiler();
 
         !self.parser.had_error

@@ -18,6 +18,8 @@ pub enum OpCode {
     OpEqual,
     OpGreater,
     OpLess,
+    OpEmit,
+    OpPop,
 }
 
 impl From<OpCode> for u8 {
@@ -43,6 +45,8 @@ impl From<u8> for OpCode {
             11 => OpCode::OpEqual,
             12 => OpCode::OpGreater,
             13 => OpCode::OpLess,
+            14 => OpCode::OpEmit,
+            15 => OpCode::OpPop,
             _ => panic!("Error. Invalid OpCode code")
         }
     }

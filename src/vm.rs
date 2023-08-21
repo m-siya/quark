@@ -110,7 +110,7 @@ impl VM {
             ($op:tt) => {
                 {
                     let op_r = self.peek(0);
-                    println!("this works");
+                    //println!("this works");
                     let op_l = self.peek(1);
                     
                     match (op_r.is_number(), op_l.is_number()) {
@@ -147,12 +147,17 @@ impl VM {
 
             match instruction {
                 OpCode::OpReturn => {
-                    print!("Final value on stack when program returns: ");
-                    (self.pop()).print_value();
-                    println!();
+                    // print!("Final value on stack when program returns: ");
+                    // (self.pop()).print_value();
+                    // println!();
 
                     return InterpretResult::Ok;
-                }
+                },
+
+                OpCode::OpEmit => {
+                    (self.pop()).print_value();
+                    println!();
+                },
 
                 OpCode::OpConstant => {
                     let constant = self.read_constant(chunk).clone();
@@ -205,6 +210,9 @@ impl VM {
                 OpCode::OpVoid => self.push(Value::ValVoid(())),
                 OpCode::OpTrue => self.push(Value::ValBool(true)),
                 OpCode::OpFalse => self.push(Value::ValBool(false)),
+                OpCode::OpPop => {
+                    self.pop();
+                },
                 OpCode::OpEqual => {
                     let a = self.pop();
                     let b = self.pop();
