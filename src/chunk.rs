@@ -20,6 +20,9 @@ pub enum OpCode {
     OpLess,
     OpEmit,
     OpPop,
+    OpDefineGlobal,
+    OpGetGlobal,
+    OpSetGlobal,
 }
 
 impl From<OpCode> for u8 {
@@ -47,6 +50,9 @@ impl From<u8> for OpCode {
             13 => OpCode::OpLess,
             14 => OpCode::OpEmit,
             15 => OpCode::OpPop,
+            16 => OpCode::OpDefineGlobal,
+            17 => OpCode::OpGetGlobal,
+            18 => OpCode::OpSetGlobal,
             _ => panic!("Error. Invalid OpCode code")
         }
     }

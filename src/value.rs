@@ -1,6 +1,6 @@
 use std::ops::{Neg, Add, Sub, Mul, Div, Not};
 
-use crate::object::Object;
+use crate::object::{Object, ObjString};
 
 #[derive(Clone)]
 pub enum Value {
@@ -171,6 +171,15 @@ impl Value {
             Value::ValObject(Object) => true,
             _ => false,
         }
+    }
+
+    pub fn get_inner_string(&self) -> Option<&str> {
+        match self {
+            Value::ValObject(object) => {
+                object.get_object_data()
+            }
+            _ => None
+        } 
     }
 
 

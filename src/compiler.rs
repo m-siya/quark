@@ -1,5 +1,5 @@
 use crate::{scanner::{Token, TokenType, Scanner}, chunk::{Chunk, OpCode}, value::Value, object::{Object, ObjString}};
-use std::str;
+use std::{str, error};
 
 #[repr(u8)]
 #[derive(Copy, Clone, PartialEq, PartialOrd)]
@@ -42,7 +42,7 @@ impl From<u8> for Precedence {
     }
 }
 
-type ParseFn = fn(&mut Compiler);
+type ParseFn = fn(&mut Compiler, can_assign: bool);
 #[derive(Copy, Clone)]
 struct ParseRule {
     prefix: Option<ParseFn>,
@@ -81,7 +81,7 @@ impl <'a> Compiler<'a> {
         ];
 
         rules[TokenType::LeftParen as usize] = ParseRule {
-            prefix: Some(|compiler| compiler.grouping()),
+            prefix: Some(|compiler, can_assign| compiler.grouping()),
             infix: None,
             precedence: Precedence::None,
         };
@@ -117,14 +117,14 @@ impl <'a> Compiler<'a> {
         };
     
         rules[TokenType::Minus as usize] = ParseRule {
-            prefix: Some(|compiler| compiler.unary()),
-            infix: Some(|compiler| compiler.binary()),
+            prefix: Some(|compiler, can_assign| compiler.unary()),
+            infix: Some(|compiler, can_assign| compiler.binary()),
             precedence: Precedence::Term,
         };
     
         rules[TokenType::Plus as usize] = ParseRule {
             prefix: None,
-            infix: Some(|compiler| compiler.binary()),
+            infix: Some(|compiler, can_assign| compiler.binary()),
             precedence: Precedence::Term,
         };
     
@@ -136,25 +136,25 @@ impl <'a> Compiler<'a> {
     
         rules[TokenType::Slash as usize] = ParseRule {
             prefix: None,
-            infix: Some(|compiler| compiler.binary()),
+            infix: Some(|compiler, can_assign| compiler.binary()),
             precedence: Precedence::Factor,
         };
     
         rules[TokenType::Star as usize] = ParseRule {
             prefix: None,
-            infix: Some(|compiler| compiler.binary()),
+            infix: Some(|compiler, can_assign| compiler.binary()),
             precedence: Precedence::Factor,
         };
     
         rules[TokenType::Bang as usize] = ParseRule {
-            prefix: Some(|compiler| compiler.unary()),
+            prefix: Some(|compiler, can_assign| compiler.unary()),
             infix: None,
             precedence: Precedence::None,
         };
     
         rules[TokenType::BangEqual as usize] = ParseRule {
             prefix: None,
-            infix:  Some(|compiler| compiler.binary()),
+            infix:  Some(|compiler, can_assign| compiler.binary()),
             precedence: Precedence::Equality,
         };
     
@@ -166,48 +166,48 @@ impl <'a> Compiler<'a> {
     
         rules[TokenType::EqualEqual as usize] = ParseRule {
             prefix: None,
-            infix:  Some(|compiler| compiler.binary()),
+            infix:  Some(|compiler, can_assign| compiler.binary()),
             precedence: Precedence::Equality,
         };
     
         rules[TokenType::Greater as usize] = ParseRule {
             prefix: None,
-            infix:  Some(|compiler| compiler.binary()),
+            infix:  Some(|compiler, can_assign| compiler.binary()),
             precedence: Precedence::Comparison,
         };
     
         rules[TokenType::GreaterEqual as usize] = ParseRule {
             prefix: None,
-            infix:  Some(|compiler| compiler.binary()),
+            infix:  Some(|compiler, can_assign| compiler.binary()),
             precedence: Precedence::Comparison,
         };
     
         rules[TokenType::Less as usize] = ParseRule {
             prefix: None,
-            infix:  Some(|compiler| compiler.binary()),
+            infix:  Some(|compiler, can_assign| compiler.binary()),
             precedence: Precedence::Comparison,
         };
     
         rules[TokenType::LessEqual as usize] = ParseRule {
             prefix: None,
-            infix:  Some(|compiler| compiler.binary()),
+            infix:  Some(|compiler, can_assign| compiler.binary()),
             precedence: Precedence::Comparison,
         };
     
         rules[TokenType::Identifier as usize] = ParseRule {
-            prefix: None,
+            prefix: Some(|compiler, can_assign| compiler.variable(can_assign)),
             infix: None,
             precedence: Precedence::None,
         };
     
         rules[TokenType::String as usize] = ParseRule {
-            prefix: Some(|compiler| compiler.string()),
+            prefix: Some(|compiler, can_assign| compiler.string()),
             infix: None,
             precedence: Precedence::None,
         };
     
         rules[TokenType::Number as usize] = ParseRule {
-            prefix: Some(|compiler| compiler.number()),
+            prefix: Some(|compiler, can_assign| compiler.number()),
             infix: None,
             precedence: Precedence::None,
         };
@@ -225,7 +225,7 @@ impl <'a> Compiler<'a> {
         };
     
         rules[TokenType::False as usize] = ParseRule {
-            prefix: Some(|compiler| compiler.literal()),
+            prefix: Some(|compiler, can_assign| compiler.literal()),
             infix: None,
             precedence: Precedence::None,
         };
@@ -243,7 +243,7 @@ impl <'a> Compiler<'a> {
         };
     
         rules[TokenType::Void as usize] = ParseRule {
-            prefix: Some(|compiler| compiler.literal()),
+            prefix: Some(|compiler, can_assign| compiler.literal()),
             infix: None,
             precedence: Precedence::None,
         };
@@ -267,7 +267,7 @@ impl <'a> Compiler<'a> {
         };
     
         rules[TokenType::True as usize] = ParseRule {
-            prefix: Some(|compiler| compiler.literal()),
+            prefix: Some(|compiler, can_assign| compiler.literal()),
             infix: None,
             precedence: Precedence::None,
         };
@@ -342,6 +342,20 @@ impl <'a> Compiler<'a> {
         self.parse_precedence(Precedence::Assignment);
     }
 
+    fn var_declaration(&mut self) {
+        let global: u8 = self.parse_variable("Expecting variable name.");
+
+        if self.is_match(TokenType::Equal) {
+            self.expression();
+        } else {
+            self.emit_byte(OpCode::OpVoid.into());
+        }
+
+        self.consume(TokenType::Semicolon, "Expecting ';' after expression");
+
+        self.define_variable(global);
+    }
+
     fn expression_statement(&mut self) {
         self.expression();
         self.consume(TokenType::Semicolon, "Expecting ';' after expression");
@@ -355,7 +369,12 @@ impl <'a> Compiler<'a> {
     }
 
     fn declaration(&mut self) {
-        self.statement();
+        //self.statement();
+        if self.is_match(TokenType::Create) {
+            self.var_declaration();
+        } else {
+            self.statement();
+        }
 
         if self.parser.panic_mode {
             self.synchronize();
@@ -408,7 +427,9 @@ impl <'a> Compiler<'a> {
             return;
         }
 
-        prefix_rule.unwrap()(self);
+       // prefix_rule.unwrap()(self);
+       let can_assign: bool = precedence <= Precedence::Assignment;
+       prefix_rule.unwrap()(self, can_assign);
 
         while precedence <= self.get_rule(self.parser.current.token_type).unwrap().precedence {
             self.advance();
@@ -419,9 +440,12 @@ impl <'a> Compiler<'a> {
             }
             
             let infix_rule = rule.unwrap().infix;
-            infix_rule.unwrap()(self);
-
-
+            infix_rule.unwrap()(self, can_assign);
+        }
+        
+        
+        if can_assign && self.is_match(TokenType::Equal) {
+            self.error_at(self.parser.previous, "Invalid assignment target");
         }
         // self.advance();
         // if let Some(prefix_rule) = self.rules[self.parser.previous.token_type as usize].prefix {
@@ -438,6 +462,28 @@ impl <'a> Compiler<'a> {
         // }
     }
 
+    fn identifier_constant(&mut self, name: Token) -> u8 {
+        // global variables are looked up by name at runtime. so vm needs access to name. cannot put
+        // whole string into bytecode so put in chunk's constant array and refer by index.
+        self.make_constant(
+            Value::ValObject(
+                Object::ObjString(
+                    ObjString::from_str(
+                        str::from_utf8(name.lexeme).unwrap()
+                    )
+                )
+            )
+        )
+    }
+
+    fn parse_variable(&mut self, error_message: &str) -> u8 {
+        self.consume(TokenType::Identifier, error_message);
+        self.identifier_constant(self.parser.previous)
+    }
+
+    fn define_variable(&mut self, global: u8) {
+        self.emit_bytes(OpCode::OpDefineGlobal.into(), global);
+    }
 
     // append a single byte to the chunk
     fn emit_byte(&mut self, byte: u8){
@@ -565,6 +611,23 @@ impl <'a> Compiler<'a> {
                 // str::from_utf8(
                 //     self.parser.previous.lexeme).unwrap_or("")
                 //     .trim_start_matches('"').trim_end_matches('"'))));
+    }
+
+    fn named_variable(&mut self, name: Token, can_assign: bool) {
+        let arg = self.identifier_constant(name);
+        //takes the identifier token and add its lexeme to the chunk's constant table as string
+
+        if can_assign && self.is_match(TokenType::Equal) {
+            self.expression();
+            self.emit_bytes(OpCode::OpSetGlobal.into(), arg);
+        } else {
+            self.emit_bytes(OpCode::OpGetGlobal.into(), arg)
+        }
+
+    }
+    
+    fn variable(&mut self, can_assign: bool) {
+        self.named_variable(self.parser.previous, can_assign);
     }
 
     fn error_at_current(&mut self, message: &str) {

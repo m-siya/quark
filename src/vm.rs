@@ -1,4 +1,7 @@
 use core::panic;
+use std::collections::HashMap;
+use std::hash::Hash;
+use std::string;
 
 use crate::debug;
 use crate::chunk::{Chunk, OpCode};
@@ -26,16 +29,17 @@ macro_rules! run_time_error {
     };
 }
 
-pub struct VM {
+pub struct VM{
     //chunk: Chunk,
     ip: usize, //indexes into the next instruction in the chunk
     stack: Vec<Value>,
     heap: Vec<Object>,
+    globals: HashMap<String, Value>
 }
 
 impl VM {
-    pub fn new() -> VM {
-        VM {ip: 0, stack: Vec::new(), heap: Vec::new()}
+    pub fn new() -> VM{
+        VM {ip: 0, stack: Vec::new(), heap: Vec::new(), globals: HashMap::new()}
     }
 
     pub fn reset_stack(&mut self) {
@@ -55,6 +59,14 @@ impl VM {
         self.ip += 1;
        // chunk.constants[index]
        chunk.get_constant(index)
+    }
+
+    fn read_string(&mut self, chunk: &Chunk) -> String {
+        let string_object = self.read_constant(chunk);
+        match string_object.get_inner_string() {
+            Some(inner_string) => inner_string.to_string(),
+            None => panic!("Empy string as identifier"),
+        }
     }
 
     pub fn push(&mut self, value: Value) {
@@ -212,6 +224,38 @@ impl VM {
                 OpCode::OpFalse => self.push(Value::ValBool(false)),
                 OpCode::OpPop => {
                     self.pop();
+                },
+                OpCode::OpGetGlobal => {
+                    let name = self.read_string(chunk);
+
+                    match self.globals.get(&name){
+                        Some(value) => {
+                            self.push(value.clone());
+                        }
+                        None => {
+                            run_time_error!(&chunk, self.ip, "Error: {}", "Undefined variable ".to_owned() + &name);
+                            return InterpretResult::RuntimeError;
+                        }
+                    }
+                }
+                OpCode::OpDefineGlobal => {
+                    let name = self.read_string(chunk);
+                    self.globals.insert(name, self.peek(0).clone());
+                    self.pop();
+
+                },
+                OpCode::OpSetGlobal => {
+                    let name = self.read_string(chunk);
+
+                    match self.globals.get(&name){
+                        None => {
+                            run_time_error!(&chunk, self.ip, "Error: {}", "Undefined variable ".to_owned() + &name);
+                            return InterpretResult::RuntimeError;
+                        }
+                        Some(_) => {
+                            self.globals.insert(name, self.peek(0).clone());
+                        }
+                    }
                 },
                 OpCode::OpEqual => {
                     let a = self.pop();
