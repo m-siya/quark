@@ -225,6 +225,15 @@ impl VM {
                 OpCode::OpPop => {
                     self.pop();
                 },
+                OpCode::OpGetLocal => {
+                    let slot = self.read_byte(chunk);
+                    print!("{:?}", &self.stack[slot as u8 as usize]);
+                    self.stack.push(self.stack[slot as u8 as usize].clone())
+                },
+                OpCode::OpSetLocal => {
+                    let slot = self.read_byte(chunk);
+                    self.stack[slot as u8 as usize] = self.peek(0).clone();
+                }
                 OpCode::OpGetGlobal => {
                     let name = self.read_string(chunk);
 

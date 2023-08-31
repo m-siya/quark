@@ -1,10 +1,9 @@
 use std::rc::Rc;
 
-#[derive(Clone, Hash)]
+#[derive(Clone, Hash, Debug)]
 pub struct ObjString {
     string_rc : Rc<String>,
 }
-
 
 impl ObjString {
     pub fn from_str(s: &str) -> Self {
@@ -13,7 +12,7 @@ impl ObjString {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Object {
     ObjString(ObjString),
 

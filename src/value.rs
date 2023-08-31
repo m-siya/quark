@@ -2,7 +2,7 @@ use std::ops::{Neg, Add, Sub, Mul, Div, Not};
 
 use crate::object::{Object, ObjString};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Value {
     ValBool(bool),
     ValVoid(()),
