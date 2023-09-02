@@ -65,18 +65,18 @@ impl<'a> Parser<'a> {
 
 struct Local<'a> {
     name: Token<'a>,
-    depth: usize,
+    depth: i32,
 }
 
 impl <'a> Local <'a> {
-    pub fn new(name: Token<'a>, depth: usize) -> Self {
+    pub fn new(name: Token<'a>, depth: i32) -> Self {
         Local { name: name, depth: depth }
     }
 }
 
 struct Scope <'a>{
     locals: Vec<Local<'a>>,
-    scope_depth: usize, // numberof blocks surrounding the current bit of code we're compiling
+    scope_depth: i32, // numberof blocks surrounding the current bit of code we're compiling
 }
 
 impl <'a> Scope <'a>{
@@ -86,7 +86,7 @@ impl <'a> Scope <'a>{
 
 
     pub fn add_local(&mut self, name: Token<'a>) {
-        let local: Local = Local::new(name, usize::MAX);
+        let local: Local = Local::new(name, -1);
         self.locals.push(local);
     }
 }
@@ -547,7 +547,7 @@ impl <'a> Compiler<'a> {
 
         let name: Token = self.parser.previous;
 
-        for local in self.scope.locals.iter().rev().take_while(|local| local.depth == usize::MAX || local.depth >= self.scope.scope_depth) {
+        for local in self.scope.locals.iter().rev().take_while(|local| local.depth == -1 || local.depth >= self.scope.scope_depth) {
             if name.lexeme == local.name.lexeme {
                 self.error_at_current("Already a variable with this name in this scope");
                 return;
@@ -709,8 +709,10 @@ impl <'a> Compiler<'a> {
         let (arg, set_op, get_op) = if let Some(index) = self.resolve_local(name) {
             (index as u8, OpCode::OpGetLocal, OpCode::OpSetLocal)
         } else {
-            (self.identifier_constant(name), OpCode::OpGetGlobal, OpCode::OpSetGlobal)
+            (self.identifier_constant(name), OpCode::OpSetGlobal, OpCode::OpGetGlobal)
         };
+
+        println!("{} {:?} {:?}", arg, set_op, get_op);
 
         // match local_index {
         //     Some(index) => {
@@ -737,7 +739,7 @@ impl <'a> Compiler<'a> {
     fn resolve_local(&mut self, name: Token) -> Option<usize> {
         for (index, local)  in self.scope.locals.iter().enumerate().rev() {
             if name.lexeme == local.name.lexeme {
-                if local.depth == usize::MAX {
+                if local.depth == -1 {
                     self.error_at_current("Cannot read local variable in its own initializer.");
                 }
                 return Some(index)

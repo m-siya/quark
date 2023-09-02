@@ -1,7 +1,7 @@
 //use crate::value;
 use crate::value::Value;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum OpCode {
    
     OpConstant,
@@ -63,7 +63,7 @@ impl From<u8> for OpCode {
 }
 
 // access the chunk's capacity and count using vector's .capacity() and .len()
-//#[derive(Clone)]
+#[derive(Debug)]
 pub struct Chunk {
     pub code: Vec<u8>,
     pub constants: Vec<Value>,

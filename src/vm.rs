@@ -1,4 +1,10 @@
 use core::panic;
+
+#[cfg(feature = "trace")]
+use trace::trace;
+#[cfg(feature = "trace")]
+trace::init_depth_var!();
+
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::string;
@@ -10,6 +16,7 @@ use crate::value::Value;
 use crate::compiler::Compiler;
 //use crate::compiler::Compiler;
 
+#[derive(Debug)]
 pub enum InterpretResult {
     Ok,
     CompileError,
@@ -29,6 +36,8 @@ macro_rules! run_time_error {
     };
 }
 
+
+#[derive(Debug)]
 pub struct VM{
     //chunk: Chunk,
     ip: usize, //indexes into the next instruction in the chunk
@@ -235,11 +244,14 @@ impl VM {
                     self.stack[slot as u8 as usize] = self.peek(0).clone();
                 }
                 OpCode::OpGetGlobal => {
+                    //println!("hiii");
                     let name = self.read_string(chunk);
+                    //println!("hiii");
 
                     match self.globals.get(&name){
                         Some(value) => {
                             self.push(value.clone());
+                            //println!("{:?}", value);
                         }
                         None => {
                             run_time_error!(&chunk, self.ip, "Error: {}", "Undefined variable ".to_owned() + &name);
@@ -262,6 +274,7 @@ impl VM {
                             return InterpretResult::RuntimeError;
                         }
                         Some(_) => {
+                            println!("{:?}", self.stack);
                             self.globals.insert(name, self.peek(0).clone());
                         }
                     }
