@@ -46,6 +46,7 @@ pub struct VM{
     globals: HashMap<String, Value>
 }
 
+#[cfg_attr(feature = "trace", trace)]
 impl VM {
     pub fn new() -> VM{
         VM {ip: 0, stack: Vec::new(), heap: Vec::new(), globals: HashMap::new()}
@@ -235,6 +236,7 @@ impl VM {
                     self.pop();
                 },
                 OpCode::OpGetLocal => {
+                    println!("Hii");
                     let slot = self.read_byte(chunk);
                     print!("{:?}", &self.stack[slot as u8 as usize]);
                     self.stack.push(self.stack[slot as u8 as usize].clone())

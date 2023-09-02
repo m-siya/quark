@@ -1,8 +1,13 @@
 use crate::{scanner::{Token, TokenType, Scanner}, chunk::{Chunk, OpCode}, value::Value, object::{Object, ObjString}};
 use std::{str, error};
 
+#[cfg(feature = "trace")]
+use trace::trace;
+#[cfg(feature = "trace")]
+trace::init_depth_var!();
+
 #[repr(u8)]
-#[derive(Copy, Clone, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
 enum Precedence {
     None,
     Assignment, 
@@ -43,13 +48,14 @@ impl From<u8> for Precedence {
 }
 
 type ParseFn = fn(&mut Compiler, can_assign: bool);
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 struct ParseRule {
     prefix: Option<ParseFn>,
     infix: Option<ParseFn>,
     precedence: Precedence,
 }
 
+#[derive(Debug)]
 struct Parser<'a> {
     current: Token<'a>,
     previous: Token<'a>,
@@ -63,6 +69,7 @@ impl<'a> Parser<'a> {
     }
 }
 
+#[derive(Debug)]
 struct Local<'a> {
     name: Token<'a>,
     depth: i32,
@@ -74,6 +81,7 @@ impl <'a> Local <'a> {
     }
 }
 
+#[derive(Debug)]
 struct Scope <'a>{
     locals: Vec<Local<'a>>,
     scope_depth: i32, // numberof blocks surrounding the current bit of code we're compiling
@@ -91,6 +99,7 @@ impl <'a> Scope <'a>{
     }
 }
 
+#[derive(Debug)]
 pub struct Compiler<'a> {
     chunk: &'a mut Chunk,
     parser: Parser<'a>,
@@ -98,6 +107,8 @@ pub struct Compiler<'a> {
     rules: Vec<ParseRule>,
     scope: Scope<'a>,
 }
+
+//#[cfg_attr(feature = "trace", trace)]
 
 impl <'a> Compiler<'a> {
     pub fn new(chunk: &'a mut Chunk, source: &'a str) -> Self {
@@ -342,6 +353,7 @@ impl <'a> Compiler<'a> {
         while let Some(last) = self.scope.locals.last() {
             if last.depth > self.scope.scope_depth {
                 self.emit_byte(OpCode::OpPop.into());
+                self.scope.locals.pop();
             }
         }
     }
@@ -707,7 +719,7 @@ impl <'a> Compiler<'a> {
         //let local_index = self.resolve_local(name);
 
         let (arg, set_op, get_op) = if let Some(index) = self.resolve_local(name) {
-            (index as u8, OpCode::OpGetLocal, OpCode::OpSetLocal)
+            (index as u8, OpCode::OpSetLocal, OpCode::OpGetLocal)
         } else {
             (self.identifier_constant(name), OpCode::OpSetGlobal, OpCode::OpGetGlobal)
         };

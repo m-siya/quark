@@ -35,7 +35,7 @@ impl From<TokenType> for usize {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Token<'a> {
     pub token_type: TokenType,
     // start: usize,
@@ -58,6 +58,7 @@ impl <'a> Token <'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct Scanner <'a> {
     source: &'a [u8],
     start: usize, // start of current lexeme
