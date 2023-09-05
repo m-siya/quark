@@ -166,6 +166,20 @@ impl Value {
         }
     }
 
+    pub fn is_true(&self) -> bool {
+        match self {
+            Value::ValBool(true) => true,
+            _ => false,
+        }
+    }
+    
+    pub fn is_false(&self) -> bool {
+        match self {
+            Value::ValBool(false) => true,
+            _ => false,
+        }
+    }
+
     pub fn is_object(&self) -> bool {
         match self {
             Value::ValObject(Object) => true,

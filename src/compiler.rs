@@ -455,9 +455,52 @@ impl <'a> Compiler<'a> {
         }
     }
 
+    fn if_statement(&mut self) {
+        self.consume(TokenType::LeftParen, "Expecting '(' after 'if'.");
+        self.expression();
+        self.consume(TokenType::RightParen, "Expecting ')' after condition.");
+
+        let then_jump = self.emit_jump(OpCode::OpJumpIfFalse); //opcode has operand for how much to offset the ip
+
+        self.statement();
+        self.patch_jump(then_jump);
+    }
+
+    fn emit_jump(&mut self, instruction: u8) -> usize {
+        self.emit_byte(instruction);
+        //placeholder operands
+        self.emit_byte(0xff);
+        self.emit_byte(0xff);
+        //return the place where we are rn (barring the placeholder operands)
+        self.chunk.code.len() - 2
+    }
+
+    fn patch_jump(&mut self, offset: usize) {
+        let jump = self.chunk.code.len() - offset - 2;
+
+        if jump as u16 > u16::MAX {
+            self.error_at_current("Too much code to jump over");
+        }
+
+        //get high byte of the two bytes set aside for jump
+        // jump >> 8 will isolate the high byte and & 0xff will ensure only 8 lsb are retained
+        if let Some(bytecode_offset) = self.chunk.code.get_mut(offset) {
+            *bytecode_offset = ((jump >> 8) & 0xff) as u8;
+        }
+        //get low byte
+        if let Some(bytecode_offset) = self.chunk.code.get_mut(offset + 1) {
+            *bytecode_offset = (jump & 0xff) as u8;
+        }
+
+        
+
+    }
+
     fn statement(&mut self) {
         if self.is_match(TokenType::Emit) {
             self.emit_statement();
+        } else if self.is_match(TokenType::If) {
+            self.if_statement();
         } else if self.is_match(TokenType::LeftBrace){
             self.begin_scope();
             self.block();
@@ -711,13 +754,6 @@ impl <'a> Compiler<'a> {
     }
 
     fn named_variable(&mut self, name: Token, can_assign: bool) {
-        // let arg;
-        // let set_op: OpCode;
-        // let get_op: OpCode;
-        //takes the identifier token and add its lexeme to the chunk's constant table as string
-
-        //let local_index = self.resolve_local(name);
-
         let (arg, set_op, get_op) = if let Some(index) = self.resolve_local(name) {
             (index as u8, OpCode::OpSetLocal, OpCode::OpGetLocal)
         } else {
@@ -725,19 +761,6 @@ impl <'a> Compiler<'a> {
         };
 
         println!("{} {:?} {:?}", arg, set_op, get_op);
-
-        // match local_index {
-        //     Some(index) => {
-        //         let arg = index;
-        //         let get_op = OpCode::OpGetLocal;
-        //         let set_op = OpCode::OpSetLocal;
-        //     }
-        //     None => {
-        //         let arg = self.identifier_constant(name);
-        //         let get_op = OpCode::OpGetGlobal;
-        //         let set_op = OpCode::OpSetGlobal;
-        //     }
-        // }
 
         if can_assign && self.is_match(TokenType::Equal) {
             self.expression();
