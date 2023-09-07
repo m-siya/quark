@@ -56,13 +56,13 @@ impl VM {
         self.stack = Vec::new();
     }
 
-    fn read_short(&mut self, chunk: &Chunk) -> u8 {
+    fn read_short(&mut self, chunk: &Chunk) -> usize {
         // self.ip += 2;
         // chunk.code[self.ip]
 
         // ((self.code[offset] as usize) << 8) | self.code[offset + 1] as usize
 
-        ((self.read_byte(chunk) as u8) << 8) + (self.read_byte(chunk) as u8)
+        usize::from(self.read_byte(chunk) as u8) << 8 + usize::from(self.read_byte(chunk) as u8)
     }
 
     //returns the next instruction to which ip points to
@@ -185,10 +185,15 @@ impl VM {
                     return InterpretResult::Ok;
                 },
                 OpCode::OpJumpIfFalse => {
-                    let offset = self.read_short();
+                    let offset = self.read_short(chunk);
                     if self.peek(0).is_false() {
-                        self.ip += offset
+                        self.ip += offset;
                     }
+                }
+                OpCode::OpJump => {
+                    let offset = self.read_short(chunk);
+                    self.ip += offset;
+
                 }
 
                 OpCode::OpEmit => {

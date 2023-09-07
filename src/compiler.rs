@@ -460,10 +460,23 @@ impl <'a> Compiler<'a> {
         self.expression();
         self.consume(TokenType::RightParen, "Expecting ')' after condition.");
 
-        let then_jump = self.emit_jump(OpCode::OpJumpIfFalse); //opcode has operand for how much to offset the ip
+        let then_jump = self.emit_jump(OpCode::OpJumpIfFalse.into()); //opcode has operand for how much to offset the ip
+        self.emit_byte(OpCode::OpPop.into());
 
         self.statement();
+        let else_jump = self.emit_jump(OpCode::OpJump.into());
+
         self.patch_jump(then_jump);
+
+        if self.is_match(TokenType::Else) {
+            self.statement();
+        }
+
+        self.patch_jump(else_jump); // is unconditional
+        self.emit_byte(OpCode::OpPop.into());
+        
+
+
     }
 
     fn emit_jump(&mut self, instruction: u8) -> usize {

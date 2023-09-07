@@ -44,9 +44,19 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: u8) -> u8 {
         OpCode::OpSetGlobal => return constant_instruction("OP_SET_GLOBAL", chunk, offset),
         OpCode::OpGetLocal => return byte_instruction("OP_GET_LOCAL", chunk, offset),
         OpCode::OpSetLocal => return byte_instruction("OP_SET_LOCAL", chunk, offset),
+        OpCode::OpJump => return jump_instruction("OP_JUMP", chunk, 1, offset),
+        OpCode::OpJumpIfFalse => return jump_instruction("OP_JUMP_IF_FALSE", chunk, 1, offset),
+
 
     
     }
+}
+
+fn jump_instruction(name: &str, chunk: &Chunk, sign: i8, offset: u8) -> u8{
+    let jump: usize = usize::from(chunk.code[offset as usize + 1] << 8 + chunk.code[offset as usize + 2]);
+
+    print!("{} {} -> {}", name, offset, offset as usize + 3 + sign as usize * jump);
+    offset + 3
 }
 
 fn constant_instruction(name: &str, chunk: &Chunk, offset: u8) -> u8 {
