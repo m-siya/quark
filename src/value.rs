@@ -146,7 +146,9 @@ impl PartialEq for Value {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Value::ValObject(object), Value::ValObject(other_object)) => object.get_object_data() == other_object.get_object_data(),
-            (_, _) => self == other,
+            (Value::ValBool(val1), Value::ValBool(val2)) => val1 == val2,
+            (Value::ValNumber(val1), Value::ValNumber(val2)) => val1 == val2,
+            (_, _) => false,
         }
     }
 }

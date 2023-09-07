@@ -86,6 +86,7 @@ impl VM {
     }
 
     pub fn push(&mut self, value: Value) {
+
         self.stack.push(value);
     }
 
@@ -93,7 +94,6 @@ impl VM {
         let value: Option<Value> = self.stack.pop();
         match value {
             Some(value) => {
-                print!("hi this works.");
                 return value;
             },
             None => panic!("VM stack is empty"),
@@ -308,8 +308,11 @@ impl VM {
                 },
                 OpCode::OpEqual => {
                     let a = self.pop();
+
                     let b = self.pop();
+
                     self.push(Value::ValBool(a == b));
+
                 }
                 OpCode::OpGreater => binary_op!(>),
                 OpCode::OpLess => binary_op!(<),
