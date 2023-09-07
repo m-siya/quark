@@ -6,8 +6,6 @@ use trace::trace;
 trace::init_depth_var!();
 
 use std::collections::HashMap;
-use std::hash::Hash;
-use std::string;
 
 use crate::debug;
 use crate::chunk::{Chunk, OpCode};
@@ -42,19 +40,18 @@ pub struct VM{
     //chunk: Chunk,
     ip: usize, //indexes into the next instruction in the chunk
     stack: Vec<Value>,
-    heap: Vec<Object>,
     globals: HashMap<String, Value>
 }
 
 #[cfg_attr(feature = "trace", trace)]
 impl VM {
     pub fn new() -> VM{
-        VM {ip: 0, stack: Vec::new(), heap: Vec::new(), globals: HashMap::new()}
+        VM {ip: 0, stack: Vec::new(), globals: HashMap::new()}
     }
 
-    pub fn reset_stack(&mut self) {
-        self.stack = Vec::new();
-    }
+    // pub fn reset_stack(&mut self) {
+    //     self.stack = Vec::new();
+    // }
 
     fn read_short(&mut self, chunk: &Chunk) -> usize {
         // self.ip += 2;
@@ -94,11 +91,15 @@ impl VM {
 
     fn pop(&mut self) -> Value {
         let value: Option<Value> = self.stack.pop();
-        
         match value {
-            Some(value) => return value,
+            Some(value) => {
+                print!("hi this works.");
+                return value;
+            },
             None => panic!("VM stack is empty"),
         }
+        
+
     }
 
     fn peek(&self, depth: usize) -> &Value {

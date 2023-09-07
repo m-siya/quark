@@ -1,5 +1,5 @@
 use crate::{scanner::{Token, TokenType, Scanner}, chunk::{Chunk, OpCode}, value::Value, object::{Object, ObjString}};
-use std::{str, error};
+use std::str;
 
 #[cfg(feature = "trace")]
 use trace::trace;
@@ -108,7 +108,7 @@ pub struct Compiler<'a> {
     scope: Scope<'a>,
 }
 
-//#[cfg_attr(feature = "trace", trace)]
+#[cfg_attr(feature = "trace", trace)]
 
 impl <'a> Compiler<'a> {
     pub fn new(chunk: &'a mut Chunk, source: &'a str) -> Self {
@@ -121,7 +121,7 @@ impl <'a> Compiler<'a> {
         ];
 
         rules[TokenType::LeftParen as usize] = ParseRule {
-            prefix: Some(|compiler, can_assign| compiler.grouping()),
+            prefix: Some(|compiler, _can_assign| compiler.grouping()),
             infix: None,
             precedence: Precedence::None,
         };
@@ -157,14 +157,14 @@ impl <'a> Compiler<'a> {
         };
     
         rules[TokenType::Minus as usize] = ParseRule {
-            prefix: Some(|compiler, can_assign| compiler.unary()),
-            infix: Some(|compiler, can_assign| compiler.binary()),
+            prefix: Some(|compiler, _can_assign| compiler.unary()),
+            infix: Some(|compiler, _can_assign| compiler.binary()),
             precedence: Precedence::Term,
         };
     
         rules[TokenType::Plus as usize] = ParseRule {
             prefix: None,
-            infix: Some(|compiler, can_assign| compiler.binary()),
+            infix: Some(|compiler, _can_assign| compiler.binary()),
             precedence: Precedence::Term,
         };
     
@@ -176,25 +176,25 @@ impl <'a> Compiler<'a> {
     
         rules[TokenType::Slash as usize] = ParseRule {
             prefix: None,
-            infix: Some(|compiler, can_assign| compiler.binary()),
+            infix: Some(|compiler, _can_assign| compiler.binary()),
             precedence: Precedence::Factor,
         };
     
         rules[TokenType::Star as usize] = ParseRule {
             prefix: None,
-            infix: Some(|compiler, can_assign| compiler.binary()),
+            infix: Some(|compiler, _can_assign| compiler.binary()),
             precedence: Precedence::Factor,
         };
     
         rules[TokenType::Bang as usize] = ParseRule {
-            prefix: Some(|compiler, can_assign| compiler.unary()),
+            prefix: Some(|compiler, _can_assign| compiler.unary()),
             infix: None,
             precedence: Precedence::None,
         };
     
         rules[TokenType::BangEqual as usize] = ParseRule {
             prefix: None,
-            infix:  Some(|compiler, can_assign| compiler.binary()),
+            infix:  Some(|compiler, _can_assign| compiler.binary()),
             precedence: Precedence::Equality,
         };
     
@@ -206,31 +206,31 @@ impl <'a> Compiler<'a> {
     
         rules[TokenType::EqualEqual as usize] = ParseRule {
             prefix: None,
-            infix:  Some(|compiler, can_assign| compiler.binary()),
+            infix:  Some(|compiler, _can_assign| compiler.binary()),
             precedence: Precedence::Equality,
         };
     
         rules[TokenType::Greater as usize] = ParseRule {
             prefix: None,
-            infix:  Some(|compiler, can_assign| compiler.binary()),
+            infix:  Some(|compiler, _can_assign| compiler.binary()),
             precedence: Precedence::Comparison,
         };
     
         rules[TokenType::GreaterEqual as usize] = ParseRule {
             prefix: None,
-            infix:  Some(|compiler, can_assign| compiler.binary()),
+            infix:  Some(|compiler, _can_assign| compiler.binary()),
             precedence: Precedence::Comparison,
         };
     
         rules[TokenType::Less as usize] = ParseRule {
             prefix: None,
-            infix:  Some(|compiler, can_assign| compiler.binary()),
+            infix:  Some(|compiler, _can_assign| compiler.binary()),
             precedence: Precedence::Comparison,
         };
     
         rules[TokenType::LessEqual as usize] = ParseRule {
             prefix: None,
-            infix:  Some(|compiler, can_assign| compiler.binary()),
+            infix:  Some(|compiler, _can_assign| compiler.binary()),
             precedence: Precedence::Comparison,
         };
     
@@ -241,13 +241,13 @@ impl <'a> Compiler<'a> {
         };
     
         rules[TokenType::String as usize] = ParseRule {
-            prefix: Some(|compiler, can_assign| compiler.string()),
+            prefix: Some(|compiler, _can_assign| compiler.string()),
             infix: None,
             precedence: Precedence::None,
         };
     
         rules[TokenType::Number as usize] = ParseRule {
-            prefix: Some(|compiler, can_assign| compiler.number()),
+            prefix: Some(|compiler, _can_assign| compiler.number()),
             infix: None,
             precedence: Precedence::None,
         };
@@ -265,7 +265,7 @@ impl <'a> Compiler<'a> {
         };
     
         rules[TokenType::False as usize] = ParseRule {
-            prefix: Some(|compiler, can_assign| compiler.literal()),
+            prefix: Some(|compiler, _can_assign| compiler.literal()),
             infix: None,
             precedence: Precedence::None,
         };
@@ -283,7 +283,7 @@ impl <'a> Compiler<'a> {
         };
     
         rules[TokenType::Void as usize] = ParseRule {
-            prefix: Some(|compiler, can_assign| compiler.literal()),
+            prefix: Some(|compiler, _can_assign| compiler.literal()),
             infix: None,
             precedence: Precedence::None,
         };
@@ -307,7 +307,7 @@ impl <'a> Compiler<'a> {
         };
     
         rules[TokenType::True as usize] = ParseRule {
-            prefix: Some(|compiler, can_assign| compiler.literal()),
+            prefix: Some(|compiler, _can_assign| compiler.literal()),
             infix: None,
             precedence: Precedence::None,
         };
@@ -374,7 +374,7 @@ impl <'a> Compiler<'a> {
     fn consume(&mut self, _token_type: TokenType, message: &str) {
         match self.parser.current.token_type {
             _token_type => self.advance(),
-            _ => self.error_at_current(message),
+            //_ => self.error_at_current(message),
         };
     }
 
@@ -391,7 +391,7 @@ impl <'a> Compiler<'a> {
         self.parser.current.token_type == token_type
     }
 
-    fn my_and(&mut self, can_assign: bool) {
+    fn my_and(&mut self, _can_assign: bool) {
         let end_jump = self.emit_jump(OpCode::OpJumpIfFalse.into());
 
         self.emit_byte(OpCode::OpPop.into());
@@ -400,7 +400,7 @@ impl <'a> Compiler<'a> {
         self.patch_jump(end_jump);
     }
 
-    fn my_or(&mut self, can_assign: bool) {
+    fn my_or(&mut self, _can_assign: bool) {
         let else_jump = self.emit_jump(OpCode::OpJumpIfFalse.into());
         let end_jump = self.emit_jump(OpCode::OpJump.into());
 
@@ -826,7 +826,7 @@ impl <'a> Compiler<'a> {
             (self.identifier_constant(name), OpCode::OpSetGlobal, OpCode::OpGetGlobal)
         };
 
-        println!("{} {:?} {:?}", arg, set_op, get_op);
+        //println!("{} {:?} {:?}", arg, set_op, get_op);
 
         if can_assign && self.is_match(TokenType::Equal) {
             self.expression();

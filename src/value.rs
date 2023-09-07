@@ -1,6 +1,6 @@
 use std::ops::{Neg, Add, Sub, Mul, Div, Not};
 
-use crate::object::{Object, ObjString};
+use crate::object::Object;
 
 #[derive(Clone, Debug)]
 pub enum Value {
@@ -182,7 +182,7 @@ impl Value {
 
     pub fn is_object(&self) -> bool {
         match self {
-            Value::ValObject(Object) => true,
+            Value::ValObject(_object) => true,
             _ => false,
         }
     }
