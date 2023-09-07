@@ -254,7 +254,7 @@ impl <'a> Compiler<'a> {
     
         rules[TokenType::And as usize] = ParseRule {
             prefix: None,
-            infix: None,
+            infix: Some(|compiler, can_assign| compiler.my_and(can_assign)),
             precedence: Precedence::None,
         };
     
@@ -290,7 +290,7 @@ impl <'a> Compiler<'a> {
     
         rules[TokenType::Or as usize] = ParseRule {
             prefix: None,
-            infix: None,
+            infix: Some(|compiler, can_assign| compiler.my_or(can_assign)),
             precedence: Precedence::None,
         };
     
@@ -389,6 +389,26 @@ impl <'a> Compiler<'a> {
 
     fn check(&self, token_type: TokenType) -> bool {
         self.parser.current.token_type == token_type
+    }
+
+    fn my_and(&mut self, can_assign: bool) {
+        let end_jump = self.emit_jump(OpCode::OpJumpIfFalse.into());
+
+        self.emit_byte(OpCode::OpPop.into());
+        self.parse_precedence(Precedence::And);
+
+        self.patch_jump(end_jump);
+    }
+
+    fn my_or(&mut self, can_assign: bool) {
+        let else_jump = self.emit_jump(OpCode::OpJumpIfFalse.into());
+        let end_jump = self.emit_jump(OpCode::OpJump.into());
+
+        self.patch_jump(else_jump);
+        self.emit_byte(OpCode::OpPop.into());
+
+        self.parse_precedence(Precedence::Or);
+        self.patch_jump(end_jump);
     }
 
     fn expression(&mut self) {
