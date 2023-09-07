@@ -46,9 +46,7 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: u8) -> u8 {
         OpCode::OpSetLocal => return byte_instruction("OP_SET_LOCAL", chunk, offset),
         OpCode::OpJump => return jump_instruction("OP_JUMP", chunk, 1, offset),
         OpCode::OpJumpIfFalse => return jump_instruction("OP_JUMP_IF_FALSE", chunk, 1, offset),
-
-
-    
+        OpCode::OpLoop => return jump_instruction("OP_LOOP", chunk, -1, offset)
     }
 }
 

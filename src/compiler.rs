@@ -529,11 +529,30 @@ impl <'a> Compiler<'a> {
 
     }
 
+    fn while_statement(&mut self) {
+        let loop_start = self.chunk.code.len(); //capture location of start of loop
+        self.consume(TokenType::LeftParen, "Expecting '(' after 'while'.");
+        self.expression();
+        self.consume(TokenType::While, "Expecting ')' after condition.");
+
+        let exit_jump = self.emit_jump(OpCode::OpJumpIfFalse.into());
+        self.emit_byte(OpCode::OpPop.into());
+        self.statement();
+        self.emit_loop(loop_start); //to jump backward
+
+        self.patch_jump(exit_jump);
+        self.emit_byte(OpCode::OpPop.into());
+    }
+
+
+
     fn statement(&mut self) {
         if self.is_match(TokenType::Emit) {
             self.emit_statement();
         } else if self.is_match(TokenType::If) {
             self.if_statement();
+        } else if self.is_match(TokenType::While){
+            self.while_statement();
         } else if self.is_match(TokenType::LeftBrace){
             self.begin_scope();
             self.block();
@@ -670,6 +689,20 @@ impl <'a> Compiler<'a> {
 
     fn emit_return(&mut self) {
         self.emit_byte(OpCode::OpReturn.into());
+    }
+
+    fn emit_loop(&mut self, loop_start: usize) {
+        self.emit_byte(OpCode::OpLoop.into());
+
+        let offset = self.chunk.code.len() - loop_start + 2;
+        if offset as u16 > u16::MAX {
+            self.error_at_current("Loop body too large");
+        } 
+
+        self.emit_byte(((offset >> 8) & 0xff) as u8);
+        self.emit_byte((offset & 0xff) as u8);
+
+
     }
 
     fn make_constant(&mut self, value: Value) -> u8 {

@@ -27,6 +27,7 @@ pub enum OpCode {
     OpSetLocal,
     OpJumpIfFalse,
     OpJump,
+    OpLoop,
 }
 
 impl From<OpCode> for u8 {
@@ -61,6 +62,7 @@ impl From<u8> for OpCode {
             20 => OpCode::OpSetLocal,
             21 => OpCode::OpJumpIfFalse,
             22 => OpCode::OpJump,
+            23 => OpCode::OpLoop,
             _ => panic!("Error. Invalid OpCode code")
         }
     }

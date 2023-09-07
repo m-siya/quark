@@ -195,6 +195,10 @@ impl VM {
                     self.ip += offset;
 
                 }
+                OpCode::OpLoop => {
+                    let offset = self.read_short(chunk);
+                    self.ip -= offset;
+                },
 
                 OpCode::OpEmit => {
                     (self.pop()).print_value();
