@@ -255,7 +255,7 @@ impl <'a> Compiler<'a> {
         rules[TokenType::And as usize] = ParseRule {
             prefix: None,
             infix: Some(|compiler, can_assign| compiler.my_and(can_assign)),
-            precedence: Precedence::None,
+            precedence: Precedence::And,
         };
     
         rules[TokenType::Else as usize] = ParseRule {
@@ -512,7 +512,7 @@ impl <'a> Compiler<'a> {
         if jump as u16 > u16::MAX {
             self.error_at_current("Too much code to jump over");
         }
-        println!("chunk before patch jump {:?}, index - {}", self.chunk.code, offset);
+        //println!("chunk before patch jump {:?}, index - {}", self.chunk.code, offset);
         //get high byte of the two bytes set aside for jump
         // jump >> 8 will isolate the high byte and & 0xff will ensure only 8 lsb are retained
         if let Some(bytecode_offset) = self.chunk.code.get_mut(offset) {
@@ -523,7 +523,7 @@ impl <'a> Compiler<'a> {
             *bytecode_offset = (jump & 0xff) as u8;
         }
 
-        println!("chunk after patch jump {:?}", self.chunk.code);
+       // println!("chunk after patch jump {:?}", self.chunk.code);
 
         
 
