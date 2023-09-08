@@ -51,10 +51,16 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: u8) -> u8 {
     }
 }
 
-fn jump_instruction(name: &str, chunk: &Chunk, sign: i8, offset: u8) -> u8{
-    let jump: usize = (usize::from(chunk.code[offset as usize + 1]) << 8) + usize::from(chunk.code[offset as usize + 2]);
+fn jump_instruction(name: &str, chunk: &Chunk, sign: i16, offset: u8) -> u8{
+    let jump = (usize::from(chunk.code[offset as usize + 1]) << 8) | usize::from(chunk.code[offset as usize + 2]);
 
-    print!("{} {} -> {}", name, offset, (offset as usize) + 3 + (sign as usize) * jump);
+    let jump_to = if sign > 0 {
+        offset as usize + 3 + jump
+    } else {
+        offset as usize + 3 - jump
+    };
+
+    print!("{} {} -> {}", name, offset, jump_to);
     offset + 3
 }
 
