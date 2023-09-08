@@ -58,8 +58,9 @@ impl VM {
         // chunk.code[self.ip]
 
         // ((self.code[offset] as usize) << 8) | self.code[offset + 1] as usize
+        //print!("{} {}", usize::from(self.read_byte(chunk) as u8) << 8 , usize::from(self.read_byte(chunk) as u8));
 
-        usize::from(self.read_byte(chunk) as u8) << 8 + usize::from(self.read_byte(chunk) as u8)
+        usize::from(self.read_byte(chunk) as u8) << 8 | usize::from(self.read_byte(chunk) as u8)
     }
 
     //returns the next instruction to which ip points to
@@ -98,8 +99,6 @@ impl VM {
             },
             None => panic!("VM stack is empty"),
         }
-        
-
     }
 
     fn peek(&self, depth: usize) -> &Value {
@@ -188,7 +187,10 @@ impl VM {
                 OpCode::OpJumpIfFalse => {
                     let offset = self.read_short(chunk);
                     if self.peek(0).is_false() {
+                       // print!("hiiiii {}", self.ip);
                         self.ip += offset;
+                       // print!("hiiiii {}", self.ip);
+
                     }
                 }
                 OpCode::OpJump => {

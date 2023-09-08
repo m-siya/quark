@@ -487,16 +487,14 @@ impl <'a> Compiler<'a> {
         let else_jump = self.emit_jump(OpCode::OpJump.into());
 
         self.patch_jump(then_jump);
+        self.emit_byte(OpCode::OpPop.into());
+
 
         if self.is_match(TokenType::Else) {
             self.statement();
         }
 
         self.patch_jump(else_jump); // is unconditional
-        self.emit_byte(OpCode::OpPop.into());
-        
-
-
     }
 
     fn emit_jump(&mut self, instruction: u8) -> usize {
@@ -514,7 +512,6 @@ impl <'a> Compiler<'a> {
         if jump as u16 > u16::MAX {
             self.error_at_current("Too much code to jump over");
         }
-
         //get high byte of the two bytes set aside for jump
         // jump >> 8 will isolate the high byte and & 0xff will ensure only 8 lsb are retained
         if let Some(bytecode_offset) = self.chunk.code.get_mut(offset) {
@@ -524,9 +521,6 @@ impl <'a> Compiler<'a> {
         if let Some(bytecode_offset) = self.chunk.code.get_mut(offset + 1) {
             *bytecode_offset = (jump & 0xff) as u8;
         }
-
-        
-
     }
 
     fn while_statement(&mut self) {
