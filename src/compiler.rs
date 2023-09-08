@@ -291,7 +291,7 @@ impl <'a> Compiler<'a> {
         rules[TokenType::Or as usize] = ParseRule {
             prefix: None,
             infix: Some(|compiler, can_assign| compiler.my_or(can_assign)),
-            precedence: Precedence::None,
+            precedence: Precedence::Or,
         };
     
         rules[TokenType::Emit as usize] = ParseRule {
