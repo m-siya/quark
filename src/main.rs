@@ -49,6 +49,7 @@ fn main() {
         },
         2 => {
             run_file(&mut vm, &args[1]);
+                     
         },
         _ => {
             println!("Incorrect arguments.");

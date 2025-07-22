@@ -1,5 +1,18 @@
 # quark
 
+
+## How to Run
+
+#### To run the REPL
+```rust
+cargo run quark
+```
+
+#### To run a program 
+```rust
+cargo run quark file_name
+```
+
 ## to-do
 - [ ] add instructions to load long constants
 - [ ] add testing

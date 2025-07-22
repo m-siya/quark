@@ -1,10 +1,17 @@
+/*
+    a chunk is a sequence of bytecode instructions. 
+
+    one instruction has a one byte operation code (opcode)
+
+*/
 //use crate::value;
 use crate::value::Value;
 
+// OpCode is an enum that represents the different operation codes
+// each OpCode corresponds to a specific operation that the virtual machine can perform
 #[derive(Clone, Copy, Debug)]
-pub enum OpCode {
-   
-    OpConstant,
+pub enum OpCode { 
+    OpConstant, // load a constant value onto the stack
     OpAdd,
     OpSubtract,
     OpMultiply,
@@ -30,6 +37,7 @@ pub enum OpCode {
     OpLoop,
 }
 
+// implement From trait for OpCode to convert OpCode to u8 and vice versa
 impl From<OpCode> for u8 {
     fn from(code: OpCode) -> u8 {
         code as u8
@@ -70,8 +78,11 @@ impl From<u8> for OpCode {
 
 // access the chunk's capacity and count using vector's .capacity() and .len()
 #[derive(Debug)]
+// Chunk is a struct that represents a chunk of bytecode
+// it contains the bytecode instructions, constants, and line numbers
 pub struct Chunk {
-    pub code: Vec<u8>,
+    // TODO: should code be a Vec<u8> or a Vec<OpCode>?
+    pub code: Vec<u8>, // sequence of OpCodes stored as u8
     pub constants: Vec<Value>,
     pub lines: Vec<i32>,
 }
@@ -86,8 +97,13 @@ impl Chunk {
     //     self.lines.push(line);
     // }
 
-    //compressed form of write line
+    /*
+        compressed form of write line.
+
+        takes a chunk, a byte (the opcode converted to u8), and a line number
+    */
     pub fn write(&mut self, byte: u8, line: i32) {
+
         self.code.push(byte);
 
         let len = self.lines.len();
@@ -136,7 +152,7 @@ impl Chunk {
         current_line
 
     }
-    // add_constant returns u8 
+    // add_constant returns usize
     pub fn add_constant(&mut self, value: Value) -> usize {
         self.constants.push(value);
         self.constants.len() - 1

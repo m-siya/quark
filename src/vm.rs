@@ -34,7 +34,9 @@ macro_rules! run_time_error {
     };
 }
 
-
+/*
+    Struct to execute the bytecode instructions
+*/
 #[derive(Debug)]
 pub struct VM{
     //chunk: Chunk,
@@ -48,10 +50,6 @@ impl VM {
     pub fn new() -> VM{
         VM {ip: 0, stack: Vec::new(), globals: HashMap::new()}
     }
-
-    // pub fn reset_stack(&mut self) {
-    //     self.stack = Vec::new();
-    // }
 
     fn read_short(&mut self, chunk: &Chunk) -> usize {
         // self.ip += 2;
@@ -71,6 +69,8 @@ impl VM {
         
     }
 
+    // given chunk, read the constant_index at current ip and look up value in chunk's constants
+    // returns a reference to the value
     fn read_constant<'a>(&'a mut self, chunk: &'a Chunk) -> &Value {
         let index: usize = chunk.code[self.ip] as usize;
         self.ip += 1;
@@ -87,7 +87,6 @@ impl VM {
     }
 
     pub fn push(&mut self, value: Value) {
-
         self.stack.push(value);
     }
 
@@ -101,6 +100,7 @@ impl VM {
         }
     }
 
+    //TODO - shall this return clone or reference?
     fn peek(&self, depth: usize) -> &Value {
         &self.stack[self.stack.len() - depth - 1]
     }
@@ -120,6 +120,9 @@ impl VM {
         }
     }
 
+    /*
+        Entrypoint into the VM
+    */
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
         let mut chunk: Chunk = Chunk::new();
         let mut compiler = Compiler::new(&mut chunk, source);
@@ -130,12 +133,16 @@ impl VM {
 
        // compiler.compile(source);
 
+        // ip = instruction pointer. Points to the next instruction to be executed
         self.ip = 0;
         let result: InterpretResult = self.run(&chunk);
         result
         
     }
 
+    /*
+        Execute the bytecode instructions in a single chunk
+    */
     fn run(&mut self, chunk: &Chunk) -> InterpretResult {
         macro_rules! binary_op {
             ($op:tt) => {
@@ -213,6 +220,7 @@ impl VM {
                     self.push(constant);
                     //println!("{}", constant);  
                 }
+
                 OpCode::OpAdd => {
                     let op_r = self.peek(0);
                     let op_l = self.peek(1);

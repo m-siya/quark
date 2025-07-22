@@ -358,10 +358,15 @@ impl <'a> Compiler<'a> {
         }
     }
 
+    /*
+        store current token in previous token. 
+        Scan the next token and if encounter an Error token, break and report error. 
+    */
     fn advance(&mut self) {
         self.parser.previous = self.parser.current;
         
         loop {
+            // scan the next token (scan more source code until find a valid lexeme and convert to token) and store in current
             self.parser.current = self.scanner.scan_token();
             if self.parser.current.token_type != TokenType::Error {
                 break;
@@ -607,19 +612,7 @@ impl <'a> Compiler<'a> {
         if can_assign && self.is_match(TokenType::Equal) {
             self.error_at(self.parser.previous, "Invalid assignment target");
         }
-        // self.advance();
-        // if let Some(prefix_rule) = self.rules[self.parser.previous.token_type as usize].prefix {
-        //     prefix_rule(self);
 
-        //     while precedence <= self.rules[self.parser.current.token_type as usize].precedence {
-        //         self.advance();
-        //         if let Some(infix_rule) = self.rules[self.parser.previous.token_type as usize].infix {
-        //             infix_rule(self);
-        //         }
-        //     }
-        // } else {
-        //     println!("Expect expression");
-        // }
     }
 
     fn identifier_constant(&mut self, name: Token) -> u8 {
@@ -677,7 +670,9 @@ impl <'a> Compiler<'a> {
         self.scope.locals.last_mut().unwrap().depth = self.scope.scope_depth;
     }
 
-    // append a single byte to the chunk
+    /*
+        write Opcode in u8 form to chunk along with line number
+    */
     fn emit_byte(&mut self, byte: u8){
         self.chunk.write(byte, self.parser.previous.line);
     }
@@ -725,6 +720,9 @@ impl <'a> Compiler<'a> {
     }
 
     fn number(&mut self) {
+        // self.parser.previous.lexeme is a byte array. 
+        // convert it to a string. 
+        // then parse it to a f64.
         let value = str::from_utf8(self.parser.previous.lexeme).unwrap().parse::<f64>().unwrap();
         self.emit_constant(Value::ValNumber(value));
     }
@@ -884,32 +882,11 @@ impl <'a> Compiler<'a> {
 
     }
 
-    pub fn compile(&mut self) -> bool {
-        //let mut scanner = Scanner::new(source);
-    
-        // let mut line = -1;
-    
-        // loop {
-        //     let token: Token = scanner.scan_token();
-        //     if token.line != line {
-        //         print!("{}  ", token.line);
-        //         line = token.line;
-        //     } else {
-        //         print!("   | ");
-        //     }
-    
-        //     println!(" {:?}  {:?} ", token.token_type, str::from_utf8(token.lexeme).unwrap_or("Character not supported in utf-8"));
-    
-        //     if token.token_type == TokenType::Eof {
-        //         // println!("hi! i end here");
-        //         break;
-        //     }
-            
-        // }
-    
+    /*
+        Compile the source code into bytecode and store it in the chunk.
+    */
+    pub fn compile(&mut self) -> bool {        
         self.advance();
-        // self.expression();
-        // self.consume(TokenType::Eof, "Expecting end of expression");
 
         while !self.is_match(TokenType::Eof) {
             self.declaration();
@@ -919,6 +896,6 @@ impl <'a> Compiler<'a> {
 
         !self.parser.had_error
 
-
     }
+
 }

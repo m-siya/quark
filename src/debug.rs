@@ -1,20 +1,25 @@
 use crate::chunk::{Chunk, OpCode};
 
 #[allow(dead_code)]
+// given a chunk, print all instructions in the chunk
 pub fn disassemble_chunk(chunk: &Chunk, name: &str) {
     println!("== {} ==", name);
+    
+    // offset is used to keep track of the current position in the bytecode instructions
+    let mut offset: u8 = 0;  // TODO should this be a bigger type?
 
-    let mut offset: u8 = 0;
-
+    // instructions can have different lengths so get next offset from disassemble_instruction
     while offset < chunk.code.len() as u8{
         offset = disassemble_instruction(chunk, offset);
     }
 }
 
-
+// disassemble_instruction takes a chunk and an offset, and prints the instruction at that offset
 pub fn disassemble_instruction(chunk: &Chunk, offset: u8) -> u8 {
-    print!("{} ", offset);
+    print!("{} ", offset); // print position in the chunk
 
+    // if offset is not the first instruction, print the line number
+    // TODO: equality check seems weird
     if offset > 0 && chunk.get_line(offset as usize) == chunk.get_line(offset as usize) {
         print!("  | ");
     } else {
@@ -64,15 +69,21 @@ fn jump_instruction(name: &str, chunk: &Chunk, sign: i16, offset: u8) -> u8{
     offset + 3
 }
 
+/*
+  
+*/
 fn constant_instruction(name: &str, chunk: &Chunk, offset: u8) -> u8 {
-    let constant = chunk.code[offset as usize + 1];
-    print!("{} {} ", name, constant);
-    chunk.constants[constant as usize].print_value();
+    let constant_index = chunk.code[offset as usize + 1]; // constant is stored after the opcode
+    print!("{} {}", name, constant_index); // this is constant index
+    chunk.constants[constant_index as usize].print_value();
     println!();
     offset + 2
 
 }
 
+/*
+    Print name of the instruction and increment offset by 1
+*/
 fn simple_instruction(name: &str, offset: u8) -> u8 {
     println!("{}", name);
     offset + 1

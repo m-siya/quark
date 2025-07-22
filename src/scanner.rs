@@ -35,6 +35,14 @@ impl From<TokenType> for usize {
     }
 }
 
+/*
+    Token - smallest unit of source code that is meaningful to compiler
+
+    Fields:
+    - token_type: type of the token (e.g. identifier, number, string, etc.)
+    - lexeme: the actual text of the token, is a reference to a slice of the source code
+    - line: the line number in the source code where the token was found
+*/
 #[derive(Clone, Copy, Debug)]
 pub struct Token<'a> {
     pub token_type: TokenType,
@@ -71,10 +79,18 @@ impl<'a> Scanner <'a> {
         Scanner{source: source.as_bytes(), start: 0, current: 0, line: 1}
     }
 
+    /*
+      Returns true if the scanner has reached the end of the source code.
+    */
     fn is_at_end(&self) -> bool{
         return self.current == self.source.len()
     }
 
+    /*
+    
+        Advance scanner to next character in source code.
+        Returns the character that was advanced to, or None if at end of source code.
+    */
     fn advance(&mut self) -> Option<&u8>{
         
         self.current += 1;
@@ -168,8 +184,18 @@ impl<'a> Scanner <'a> {
 
         Token::make_token(self.identifier_type(), &self.source[self.start..self.current], self.line)
     }
+    
+    /*
+        check_keyword checks if the current lexeme matches a keyword and returns the corresponding TokenType.
+        If it does not match, it returns TokenType::Identifier.
 
+        fields:
+        - start: the index in the lexeme where the keyword starts
+        - rest: the rest of the keyword to check
+        - token_type: the TokenType to return if the keyword matches
+    */
     fn check_keyword(&self, start: usize, rest: &str, token_type: TokenType) -> TokenType {
+        // check if the rest of the keyword matches
         if &self.source[self.start + start..self.current] == rest.as_bytes() {
             return token_type;
         }
@@ -177,6 +203,12 @@ impl<'a> Scanner <'a> {
         TokenType::Identifier
     }
 
+    /* 
+        identifier_type determines the type of identifier based on the first character
+        and checks for keywords in the source code.
+        
+        Returns TokenType::Identifier if no keyword is found.
+    */
     fn identifier_type(&self) -> TokenType {
         match self.source[self.start] {
             b'a' => self.check_keyword(1, "nd", TokenType::And),
@@ -206,18 +238,16 @@ impl<'a> Scanner <'a> {
         }
     }
 
-
-
+    /*
+        Scans a single token 
+    */
     pub fn scan_token(&mut self) -> Token<'a> {
-
         self.skip_whitespace();
         self.start = self.current;
 
         if self.is_at_end() {
             return Token::make_token(TokenType::Eof, &self.source[self.start..self.current], self.line);
         }
-
-
 
         let token_type = match self.advance() {
             None => TokenType::Eof,

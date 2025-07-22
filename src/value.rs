@@ -2,6 +2,10 @@ use std::ops::{Neg, Add, Sub, Mul, Div, Not};
 
 use crate::object::Object;
 
+/*
+    Value is an enum that represents the different types of values that can be stored in the virtual machine
+    It can be a boolean, number, void (nil), or an object
+*/
 #[derive(Clone, Debug)]
 pub enum Value {
     ValBool(bool),
