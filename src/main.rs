@@ -48,7 +48,7 @@ fn main() {
             repl(&mut vm);
         },
         2 => {
-            run_file(&mut vm, &args[1]);
+            run_file(&mut vm, &args[2]);
                      
         },
         _ => {
