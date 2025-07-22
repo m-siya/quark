@@ -14,32 +14,8 @@ use std::io::Write;
 use std::{env, io};
 
 fn main() {
-    // let mut chunk: Chunk = Chunk::new();
     let mut vm: VM = VM::new();
 
-    // let mut constant: usize = chunk.add_constant(Value::ValNumber(4.0));
-    // chunk.write(OpCode::OpConstant as u8, 123);
-    // chunk.write(constant as u8, 123);
-
-    // constant = chunk.add_constant(Value::ValNumber(6.0));
-    // chunk.write(OpCode::OpConstant as u8, 123);
-    // chunk.write(constant as u8, 123);
-
-    // chunk.write(OpCode::OpAdd as u8, 123);
-
-    // constant = chunk.add_constant(Value::ValNumber(5.0));
-    // chunk.write(OpCode::OpConstant as u8, 123);
-    // chunk.write(constant as u8, 123);
-
-    // chunk.write(OpCode::OpDivide as u8, 123);
-
-    // chunk.write(OpCode::OpNegate as u8, 123);
-
-    // chunk.write(OpCode::OpReturn as u8, 123);
-
-    // debug::disassemble_chunk(&chunk, "test_chunk");
-
-    // vm.interpret(&chunk);
     let args: Vec<String> = env::args().collect();
     let argc = args.len() - 1;
 
