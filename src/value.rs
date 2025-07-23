@@ -132,6 +132,7 @@ impl Not for Value {
     fn not(self) -> Value {
         match self {
             Value::ValBool(boolean) => Value::ValBool(!boolean),
+            Value::ValVoid(()) => Value::ValBool(true), // nil is considered true in this context
             _ => panic!("Error. Invalid argument for not operator"),
         }
     }
@@ -167,7 +168,7 @@ impl Value {
 
     pub fn is_bool(&self) -> bool {
         match self {
-            Value::ValBool(_) => true,
+            Value::ValBool(_) | Value::ValVoid(_)=> true,
             _ => false,
         }
     }

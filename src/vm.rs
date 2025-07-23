@@ -12,6 +12,8 @@ use crate::chunk::{Chunk, OpCode};
 use crate::object::{Object, ObjString};
 use crate::value::Value;
 use crate::compiler::Compiler;
+
+use log::debug as log_debug;
 //use crate::compiler::Compiler;
 
 #[derive(Debug)]
@@ -167,6 +169,7 @@ impl VM {
         }
         
         loop {
+            println!("stack:{:?}", self.stack);
 
             debug::disassemble_instruction(chunk, self.ip as u8);
             
@@ -176,19 +179,13 @@ impl VM {
 
             match instruction {
                 OpCode::OpReturn => {
-                    // print!("Final value on stack when program returns: ");
-                    // (self.pop()).print_value();
-                    // println!();
 
                     return InterpretResult::Ok;
                 },
                 OpCode::OpJumpIfFalse => {
                     let offset = self.read_short(chunk);
                     if self.peek(0).is_false() {
-                       // print!("hiiiii {}", self.ip);
                         self.ip += offset;
-                       // print!("hiiiii {}", self.ip);
-
                     }
                 }
                 OpCode::OpJump => {
