@@ -13,6 +13,16 @@ cargo run quark
 cargo run quark file_name
 ```
 
+#### To enable debug logs
+```rust
+cargo run quark file_name --debug
+```
+
+*To run one of the test files*
+```rust
+cargo run quark test/test.quark --debug
+```
+
 ## to-do
 - [ ] add instructions to load long constants
 - [ ] add testing

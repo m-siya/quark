@@ -168,15 +168,6 @@ impl VM {
         
         loop {
 
-            //only for debugging, put under flag later
-            print!("          ");
-            for slot in self.stack.iter() {
-                print!("[ ");
-                (slot).print_value();
-                print!(" ]");
-            }
-            println!();
-
             debug::disassemble_instruction(chunk, self.ip as u8);
             
             // debug code ends  

@@ -213,5 +213,15 @@ impl Value {
         }
     }
 
+    pub fn read_value_str(&self) -> String {
+        match self {
+            Value::ValBool(boolean) => format!("'{}'", boolean),
+            Value::ValVoid(()) => String::from("'nil'"),
+            Value::ValNumber(val) => format!("'{}'", val),
+            Value::ValObject(object) => format!("'{}'", object.get_object_data().unwrap_or("")),
+            //_ => panic!("Value not recognised, cannot print"),
+        }
+    }
+
    // pub fn read_value(&self, which: usize)
 }
