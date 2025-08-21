@@ -12,10 +12,14 @@ impl ObjString {
     }
 }
 
+/*
+    Object to support custom data types in the VM
+    Currently, it only supports strings
+    More types can be added in the future
+*/
 #[derive(Clone, Debug)]
 pub enum Object {
     ObjString(ObjString),
-
 }
 
 impl Object{
@@ -32,13 +36,3 @@ impl Object{
         
     }
 }
-
-// pub struct Object {
-//     object_type: ObjectType,
-// }
-
-// pub struct ObjectString<'a> {
-//     object: Object,
-//     length: i32,
-//     chars: &'a str,
-// }

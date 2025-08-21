@@ -1,10 +1,4 @@
 use core::panic;
-
-#[cfg(feature = "trace")]
-use trace::trace;
-#[cfg(feature = "trace")]
-trace::init_depth_var!();
-
 use std::collections::HashMap;
 
 use crate::debug;
@@ -80,6 +74,11 @@ impl VM {
        chunk.get_constant(index)
     }
 
+
+    /*  
+        Read the constant index at current instruction, look up the value in chunk's constants. it will be a string object. 
+        return the string value of the object
+    */
     fn read_string(&mut self, chunk: &Chunk) -> String {
         let string_object = self.read_constant(chunk);
         match string_object.get_inner_string() {
@@ -106,7 +105,9 @@ impl VM {
     fn peek(&self, depth: usize) -> &Value {
         &self.stack[self.stack.len() - depth - 1]
     }
-    
+
+
+     #[cfg_attr(feature = "tracing", tracing::instrument)]
     fn concatenate(&mut self) {
         let op_r = self.pop();
         let op_l = self.pop();
@@ -169,7 +170,8 @@ impl VM {
         }
         
         loop {
-            println!("stack:{:?}", self.stack);
+            // TODO: Put in verbose flag?
+            //println!("stack:{:?}", self.stack);
 
             debug::disassemble_instruction(chunk, self.ip as u8);
             
@@ -268,10 +270,11 @@ impl VM {
                     let slot = self.read_byte(chunk);
                     self.stack[slot as u8 as usize] = self.peek(0).clone();
                 }
+                // get the string value at current location. it will be the name of the global variable.
+                // look up the value in the globals hashmap. If it exists, push it onto the stack
+                // If it does not exist, raise a runtime error
                 OpCode::OpGetGlobal => {
-                    //println!("hiii");
                     let name = self.read_string(chunk);
-                    //println!("hiii");
 
                     match self.globals.get(&name){
                         Some(value) => {
@@ -284,12 +287,18 @@ impl VM {
                         }
                     }
                 }
+                //i.e we assign the top value in stack to the global name
+                // Add global variable to the globals hashmap
+                // should not check if variable already exists. Redefining a global variable is allowed
                 OpCode::OpDefineGlobal => {
                     let name = self.read_string(chunk);
                     self.globals.insert(name, self.peek(0).clone());
                     self.pop();
-
                 },
+                // get string value at current location. it will be the name of the global variable.
+                // look up the value in the globals hashmap. If it does not exist, that means it wasnt defined and its a runtime error. 
+                // implicit variable declaration is not allowed
+                // If it exists, set the value at that location to the top of the stack
                 OpCode::OpSetGlobal => {
                     let name = self.read_string(chunk);
 

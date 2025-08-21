@@ -1,0 +1,11 @@
+create breakfast = "beignets";
+create beverage = "cafe au lait";
+bf = "beignets with " + beverage;
+
+{
+    create beverage = "expresso";
+    create bf = breakfast + beverage;
+    emit bf;
+}
+
+emit bf;

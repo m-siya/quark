@@ -30,6 +30,12 @@ fn main() {
                 env::set_var("RUST_LOG", "debug");
                 env_logger::init();
             }
+
+            if argc == 3 && args[3] == "--trace" {
+                env::set_var("RUST_LOG", "trace");
+                env_logger::init();
+            }
+            
             run_file(&mut vm, &args[2]);
         }
         _ => {

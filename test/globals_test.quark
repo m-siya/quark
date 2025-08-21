@@ -1,0 +1,5 @@
+create breakfast = "beignets";
+create beverage = "cafe au lait";
+breakfast = "beignets with " + beverage;
+
+emit breakfast;

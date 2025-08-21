@@ -9,3 +9,7 @@ edition = "2021"
 trace = {version = "0.1.7", optional = true, default-features = false}
 log = "0.4"
 env_logger = "0.11"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing = "0.1.41"
+
+

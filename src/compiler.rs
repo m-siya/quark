@@ -1,10 +1,6 @@
 use crate::{scanner::{Token, TokenType, Scanner}, chunk::{Chunk, OpCode}, value::Value, object::{Object, ObjString}};
 use std::str;
-
-#[cfg(feature = "trace")]
-use trace::trace;
-#[cfg(feature = "trace")]
-trace::init_depth_var!();
+use log::{trace};
 
 #[repr(u8)]
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
@@ -72,7 +68,7 @@ impl<'a> Parser<'a> {
 #[derive(Debug)]
 struct Local<'a> {
     name: Token<'a>,
-    depth: i32,
+    depth: i32, // number of blocks surrounding the variable i.e to remember the scope where it is valid
 }
 
 impl <'a> Local <'a> {
@@ -107,8 +103,6 @@ pub struct Compiler<'a> {
     rules: Vec<ParseRule>,
     scope: Scope<'a>,
 }
-
-#[cfg_attr(feature = "trace", trace)]
 
 impl <'a> Compiler<'a> {
     pub fn new(chunk: &'a mut Chunk, source: &'a str) -> Self {
@@ -339,7 +333,9 @@ impl <'a> Compiler<'a> {
         Compiler { chunk: chunk, parser: Parser::new(), scanner: Scanner::new(source), rules: rules, scope: Scope::new()}
     }
 
+    
     fn get_rule(&self, token_type: TokenType) -> Option<&ParseRule> {
+        trace!("Getting rule for token type: {:?}", token_type);
         self.rules.get::<usize>(token_type.into())
     }
   
@@ -347,6 +343,7 @@ impl <'a> Compiler<'a> {
         self.scope.scope_depth += 1;
     }
 
+    
     fn end_scope(&mut self) {
         self.scope.scope_depth -= 1;
 
@@ -362,12 +359,14 @@ impl <'a> Compiler<'a> {
         store current token in previous token. 
         Scan the next token and if encounter an Error token, break and report error. 
     */
+    
     fn advance(&mut self) {
         self.parser.previous = self.parser.current;
         
         loop {
             // scan the next token (scan more source code until find a valid lexeme and convert to token) and store in current
             self.parser.current = self.scanner.scan_token();
+            trace!("advance: current = {:?}", self.parser.current.clone());
             if self.parser.current.token_type != TokenType::Error {
                 break;
             }
@@ -376,6 +375,10 @@ impl <'a> Compiler<'a> {
         }
     }
 
+    /*
+        if current token in parser is of type token_type, advance to next token.
+    */
+    
     fn consume(&mut self, _token_type: TokenType, message: &str) {
         match self.parser.current.token_type {
             _token_type => self.advance(),
@@ -383,6 +386,7 @@ impl <'a> Compiler<'a> {
         };
     }
 
+    
     fn is_match(&mut self, token_type: TokenType) -> bool {
         if !self.check(token_type) {
             return false;
@@ -392,10 +396,12 @@ impl <'a> Compiler<'a> {
         true
     }
 
+    
     fn check(&self, token_type: TokenType) -> bool {
         self.parser.current.token_type == token_type
     }
 
+    
     fn my_and(&mut self, _can_assign: bool) {
         let end_jump = self.emit_jump(OpCode::OpJumpIfFalse.into());
 
@@ -405,6 +411,7 @@ impl <'a> Compiler<'a> {
         self.patch_jump(end_jump);
     }
 
+    
     fn my_or(&mut self, _can_assign: bool) {
         let else_jump = self.emit_jump(OpCode::OpJumpIfFalse.into());
         let end_jump = self.emit_jump(OpCode::OpJump.into());
@@ -416,11 +423,20 @@ impl <'a> Compiler<'a> {
         self.patch_jump(end_jump);
     }
 
+    
     fn expression(&mut self) {
         self.parse_precedence(Precedence::Assignment);
     }
 
+
+    /*
+        Executed if create token is found. 
+
+        Parse variable name (identifier). 
+    */
+    
     fn var_declaration(&mut self) {
+        trace!("var_declaration");
         let global: u8 = self.parse_variable("Expecting variable name.");
 
         if self.is_match(TokenType::Equal) {
@@ -434,20 +450,29 @@ impl <'a> Compiler<'a> {
         self.define_variable(global);
     }
 
+    
     fn expression_statement(&mut self) {
+        trace!("expression statement");
         self.expression();
         self.consume(TokenType::Semicolon, "Expecting ';' after expression");
         self.emit_byte(OpCode::OpPop.into());
     }
 
+    /*
+        Executed if print token is found. 
+
+        Emit the OP_EMIT opcode to the chunk.
+
+    */
     fn emit_statement(&mut self) {
+        trace!("emit statement");  
         self.expression();
         self.consume(TokenType::Semicolon, "Expecting ';' after value.");
         self.emit_byte(OpCode::OpEmit.into());
     }
-
+    
     fn declaration(&mut self) {
-        //self.statement();
+        trace!("declaration");
         if self.is_match(TokenType::Create) {
             self.var_declaration();
         } else {
@@ -459,6 +484,7 @@ impl <'a> Compiler<'a> {
         }
     }
 
+    
     fn synchronize(&mut self) {
         //hit compile error while parsing previous statement. start synchronizing
 
@@ -480,7 +506,9 @@ impl <'a> Compiler<'a> {
         }
     }
 
+    
     fn if_statement(&mut self) {
+        trace!("if statement");
         self.consume(TokenType::LeftParen, "Expecting '(' after 'if'.");
         self.expression();
         self.consume(TokenType::RightParen, "Expecting ')' after condition.");
@@ -502,7 +530,9 @@ impl <'a> Compiler<'a> {
         self.patch_jump(else_jump); // is unconditional
     }
 
+    
     fn emit_jump(&mut self, instruction: u8) -> usize {
+        trace!("emit_jump: instruction = {}", instruction.clone());
         self.emit_byte(instruction);
         //placeholder operands
         self.emit_byte(0xff);
@@ -511,6 +541,7 @@ impl <'a> Compiler<'a> {
         self.chunk.code.len() - 2
     }
 
+    
     fn patch_jump(&mut self, offset: usize) {
         let jump = self.chunk.code.len() - offset - 2;
 
@@ -534,7 +565,9 @@ impl <'a> Compiler<'a> {
 
     }
 
+    
     fn while_statement(&mut self) {
+        trace!("while statement");
         let loop_start = self.chunk.code.len(); //capture location of start of loop
         self.consume(TokenType::LeftParen, "Expecting '(' after 'while'.");
         self.expression();
@@ -549,9 +582,12 @@ impl <'a> Compiler<'a> {
         self.emit_byte(OpCode::OpPop.into());
     }
 
-
-
+    /*
+        if not startinng valid keyword, then probably an expression statement
+    */
+    
     fn statement(&mut self) {
+        trace!("statement");
         if self.is_match(TokenType::Emit) {
             self.emit_statement();
         } else if self.is_match(TokenType::If) {
@@ -567,7 +603,9 @@ impl <'a> Compiler<'a> {
         }
     }
 
+    
     fn block(&mut self) {
+        trace!("block");
         while !self.check(TokenType::RightBrace) && !self.check(TokenType::Eof) {
             self.declaration();
         }
@@ -575,7 +613,9 @@ impl <'a> Compiler<'a> {
         self.consume(TokenType::RightBrace, "Expecting '}' after block");
     }
 
+    
     fn parse_precedence(&mut self, precedence: Precedence) {
+        trace!("parse_precedence: precedence = {:?}", precedence);
         self.advance();
 
         let rule = self.get_rule(self.parser.previous.token_type);
@@ -593,6 +633,8 @@ impl <'a> Compiler<'a> {
         }
 
        // prefix_rule.unwrap()(self);
+       // if can_assign is true, then the expression can be assigned to a variable
+       // can_assign if true only if precedence of the current token is less than or equal to the precedence of assignment operator. 
        let can_assign: bool = precedence <= Precedence::Assignment;
        prefix_rule.unwrap()(self, can_assign);
 
@@ -615,7 +657,10 @@ impl <'a> Compiler<'a> {
 
     }
 
+    
     fn identifier_constant(&mut self, name: Token) -> u8 {
+        trace!("identifier_constant: name = {:?}", name.clone());
+
         // global variables are looked up by name at runtime. so vm needs access to name. cannot put
         // whole string into bytecode so put in chunk's constant array and refer by index.
         self.make_constant(
@@ -628,25 +673,46 @@ impl <'a> Compiler<'a> {
             )
         )
     }
+    
+    /*
+        This current token should be an identifier token. if so, declare it as a variable.
 
+        consume identifier token. 
+
+        return the index of the variable in the chunk's constant array.
+
+    */
     fn parse_variable(&mut self, error_message: &str) -> u8 {
+        trace!("parse_variable: error_message = {}", error_message.clone());
         self.consume(TokenType::Identifier, error_message);
 
         self.declare_variable();
 
+        // exit if in local scope (depth > 0 means inside a nested block)
+        // no need to look up local variables at runtime
         if self.scope.scope_depth > 0 {  // if scope is not global
             return 0;
         }
         self.identifier_constant(self.parser.previous)
     }
 
+    /*
+        Variable name is previous token. 
+    */
+    
     fn declare_variable(&mut self) {
+        trace!("declare_variable");
+        // if scope is global, we do not need to keep track of variable declarations.
+        // as global variables are late bound (looked up by name at runtime)
         if self.scope.scope_depth == 0 {
             return;
         }
 
         let name: Token = self.parser.previous;
 
+        //locals are appended to end of locals vector. 
+        // when defining a new local, start from end and check if any other local has the same name in in the same scope. 
+        // re-declaring a variable in the same scope is an error.
         for local in self.scope.locals.iter().rev().take_while(|local| local.depth == -1 || local.depth >= self.scope.scope_depth) {
             if name.lexeme == local.name.lexeme {
                 self.error_at_current("Already a variable with this name in this scope");
@@ -654,11 +720,17 @@ impl <'a> Compiler<'a> {
             }
         }
 
-
         self.scope.add_local(name);
     }
 
+
+    /* 
+        Emit the OpCode for defining a variable.
+    */
+    
     fn define_variable(&mut self, global: u8) {
+        trace!("define_variable: global = {}", global.clone());
+        // if scope is local 
         if self.scope.scope_depth > 0 {
             self.mark_initialized();
             return;
@@ -666,6 +738,7 @@ impl <'a> Compiler<'a> {
         self.emit_bytes(OpCode::OpDefineGlobal.into(), global);
     }
 
+    
     fn mark_initialized(&mut self) {
         self.scope.locals.last_mut().unwrap().depth = self.scope.scope_depth;
     }
@@ -673,19 +746,23 @@ impl <'a> Compiler<'a> {
     /*
         write Opcode in u8 form to chunk along with line number
     */
+    
     fn emit_byte(&mut self, byte: u8){
         self.chunk.write(byte, self.parser.previous.line);
     }
 
+    
     fn emit_bytes(&mut self, byte1: u8, byte2: u8) {
         self.emit_byte(byte1);
         self.emit_byte(byte2);
     }
 
+    
     fn emit_return(&mut self) {
         self.emit_byte(OpCode::OpReturn.into());
     }
 
+    
     fn emit_loop(&mut self, loop_start: usize) {
         self.emit_byte(OpCode::OpLoop.into());
 
@@ -700,6 +777,7 @@ impl <'a> Compiler<'a> {
 
     }
 
+    
     fn make_constant(&mut self, value: Value) -> u8 {
         let constant = self.chunk.add_constant(value);
 
@@ -710,15 +788,18 @@ impl <'a> Compiler<'a> {
         constant as u8     
     }
 
+    
     fn emit_constant(&mut self, value: Value) {
         let constant = self.make_constant(value);
         self.emit_bytes(OpCode::OpConstant.into(), constant);
     }
 
+    
     fn end_compiler(&mut self) {
         self.emit_return();
     }
 
+    
     fn number(&mut self) {
         // self.parser.previous.lexeme is a byte array. 
         // convert it to a string. 
@@ -727,7 +808,9 @@ impl <'a> Compiler<'a> {
         self.emit_constant(Value::ValNumber(value));
     }
 
+    
     fn unary(&mut self) {
+        trace!("unary");
         let operator_type = self.parser.previous.token_type;
 
         self.expression();
@@ -739,7 +822,9 @@ impl <'a> Compiler<'a> {
         }
     }
 
+    
     fn binary(&mut self) {
+        trace!("binary");
         let operator_type: TokenType = self.parser.previous.token_type;
         let rule: Option<&ParseRule> = self.get_rule(operator_type);
 
@@ -778,13 +863,17 @@ impl <'a> Compiler<'a> {
         }
     }
 
+    
     fn grouping(&mut self) {
+        trace!("grouping");
         self.expression();
         self.consume(TokenType::RightParen, "Expecting ')' after expression.");
 
     }
 
+    
     fn literal(&mut self) {
+        trace!("literal");
         match self.parser.previous.token_type {
             TokenType::False => self.emit_byte(OpCode::OpFalse.into()),
             TokenType::Void => self.emit_byte(OpCode::OpVoid.into()),
@@ -795,7 +884,9 @@ impl <'a> Compiler<'a> {
         }
     }
 
+    
     fn string(&mut self) {
+        trace!("string");
         self.emit_constant(
             Value::ValObject(
                 Object::ObjString(
@@ -817,7 +908,18 @@ impl <'a> Compiler<'a> {
                 //     .trim_start_matches('"').trim_end_matches('"'))));
     }
 
+    /*
+        If the current token is an identifier, then it is a variable. 
+        If it is not, then it is a global variable.
+
+        If we find a '=' token after the identifier, then it is an assignment.
+        If not, then it is a variable access.
+    */
+    
     fn named_variable(&mut self, name: Token, can_assign: bool) {
+        trace!("named_variable: name = {:?}, can_assign = {:?}", name.clone(), can_assign.clone());
+
+        //some rust magic
         let (arg, set_op, get_op) = if let Some(index) = self.resolve_local(name) {
             (index as u8, OpCode::OpSetLocal, OpCode::OpGetLocal)
         } else {
@@ -825,8 +927,9 @@ impl <'a> Compiler<'a> {
         };
 
         //println!("{} {:?} {:?}", arg, set_op, get_op);
-
+        
         if can_assign && self.is_match(TokenType::Equal) {
+            // we found an assignment, compile the expression on the right hand side
             self.expression();
             self.emit_bytes(set_op.into(), arg);
         } else {
@@ -835,6 +938,10 @@ impl <'a> Compiler<'a> {
 
     }
 
+    /*
+        Just checks if given token is a local variable in current scope
+        Returns the index of the local variable in the scope's locals vector if found.
+    */
     fn resolve_local(&mut self, name: Token) -> Option<usize> {
         for (index, local)  in self.scope.locals.iter().enumerate().rev() {
             if name.lexeme == local.name.lexeme {
@@ -847,15 +954,19 @@ impl <'a> Compiler<'a> {
         None
     }
     
+    
     fn variable(&mut self, can_assign: bool) {
+        trace!("variable: can_assign = {:?}", can_assign.clone());
         self.named_variable(self.parser.previous, can_assign);
     }
 
+    
     fn error_at_current(&mut self, message: &str) {
         self.error_at(self.parser.previous, message);
 
     }
 
+    
     fn error_at(&mut self, token: Token, message: &str) {
         if self.parser.panic_mode {
             return
@@ -885,7 +996,9 @@ impl <'a> Compiler<'a> {
     /*
         Compile the source code into bytecode and store it in the chunk.
     */
-    pub fn compile(&mut self) -> bool {        
+  //  
+    pub fn compile(&mut self) -> bool {    
+        trace!("compilation started");  
         self.advance();
 
         while !self.is_match(TokenType::Eof) {

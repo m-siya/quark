@@ -1,1 +1,5 @@
-1+2
+create c = 2;
+create d = 4;
+create b = c + d;
+
+emit b;
