@@ -1,6 +1,6 @@
 create breakfast = "beignets";
 create beverage = "cafe au lait";
-bf = "beignets with " + beverage;
+create bf = "beignets with " + beverage;
 
 {
     create beverage = "expresso";
