@@ -1,0 +1,7 @@
+create count = 0;
+
+while (count < 3) {
+    emit "Hi im a while loop";
+
+    count = count + 1;
+}
