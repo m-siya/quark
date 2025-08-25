@@ -47,14 +47,14 @@ impl VM {
         VM {ip: 0, stack: Vec::new(), globals: HashMap::new()}
     }
 
+    // read the next 2 bytes from the chunk, combine them into a single usize value
+    // this is used for jump instructions
     fn read_short(&mut self, chunk: &Chunk) -> usize {
-        // self.ip += 2;
-        // chunk.code[self.ip]
+        self.ip += 2;
 
-        // ((self.code[offset] as usize) << 8) | self.code[offset + 1] as usize
-        //print!("{} {}", usize::from(self.read_byte(chunk) as u8) << 8 , usize::from(self.read_byte(chunk) as u8));
+        let result = usize::from(chunk.code[self.ip - 2] as u8) << 8 | usize::from(chunk.code[self.ip - 1] as u8);
 
-        usize::from(self.read_byte(chunk) as u8) << 8 | usize::from(self.read_byte(chunk) as u8)
+        result
     }
 
     //returns the next instruction to which ip points to
@@ -171,7 +171,7 @@ impl VM {
         
         loop {
             // TODO: Put in verbose flag?
-            //println!("stack:{:?}", self.stack);
+            println!("stack:{:?}", self.stack);
 
             debug::disassemble_instruction(chunk, self.ip as u8);
             
@@ -186,20 +186,20 @@ impl VM {
                 },
                 OpCode::OpJumpIfFalse => {
                     let offset = self.read_short(chunk);
+                    // if value at top of stack is false, jump the ip by offset
                     if self.peek(0).is_false() {
                         self.ip += offset;
                     }
-                }
+
+                },
                 OpCode::OpJump => {
                     let offset = self.read_short(chunk);
                     self.ip += offset;
-
-                }
+                },
                 OpCode::OpLoop => {
                     let offset = self.read_short(chunk);
                     self.ip -= offset;
                 },
-
                 OpCode::OpEmit => {
                     (self.pop()).print_value();
                     println!();
@@ -209,7 +209,7 @@ impl VM {
                     let constant = self.read_constant(chunk).clone();
                     self.push(constant);
                     //println!("{}", constant);  
-                }
+                },
 
                 OpCode::OpAdd => {
                     let op_r = self.peek(0);
@@ -239,7 +239,7 @@ impl VM {
                             return InterpretResult::RuntimeError;
                         }
                     }
-                }
+                },
                 OpCode::OpNegate => {
                     let value = self.peek(0);
                     match value.is_number() {
@@ -253,7 +253,7 @@ impl VM {
                             return InterpretResult::RuntimeError;
                         }
                     }
-                }
+                },
                 OpCode::OpVoid => self.push(Value::ValVoid(())),
                 OpCode::OpTrue => self.push(Value::ValBool(true)),
                 OpCode::OpFalse => self.push(Value::ValBool(false)),

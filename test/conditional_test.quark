@@ -1,0 +1,10 @@
+create time = 10;
+
+if (!(time == 10)) {
+    create tea = "I want to drink tea";
+    emit tea;
+} else {
+    create orangeJuice = "I want to drink orange juice";
+    emit orangeJuice;
+}
+
