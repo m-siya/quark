@@ -64,6 +64,10 @@ impl <'a> Token <'a> {
     fn make_error_token(message: &str, line: i32) -> Token {
         Token {token_type: TokenType::Error, lexeme: message.as_bytes(), line: line}
     }
+
+    pub fn to_lexeme(&self) -> &str {
+        str::from_utf8(self.lexeme.clone()).unwrap()
+    }
 }
 
 #[derive(Debug)]

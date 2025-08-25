@@ -63,6 +63,10 @@ impl<'a> Parser<'a> {
     pub fn new() -> Self {
         Parser { current: Token::new() , previous: Token::new(), had_error: false, panic_mode: false}
     }
+
+    pub fn to_string(&self) -> String {
+        format!("Current token: {}, previous token: {}", self.current.to_lexeme(), self.previous.to_lexeme())
+    }
 }
 
 #[derive(Debug)]
@@ -366,7 +370,7 @@ impl <'a> Compiler<'a> {
         loop {
             // scan the next token (scan more source code until find a valid lexeme and convert to token) and store in current
             self.parser.current = self.scanner.scan_token();
-            trace!("advance: current = {:?}", self.parser.current.clone());
+            trace!("advance, {}", self.parser.to_string());
             if self.parser.current.token_type != TokenType::Error {
                 break;
             }
@@ -514,14 +518,17 @@ impl <'a> Compiler<'a> {
         self.consume(TokenType::RightParen, "Expecting ')' after condition.");
 
         let then_jump = self.emit_jump(OpCode::OpJumpIfFalse.into()); //opcode has operand for how much to offset the ip
+
+        print!("then jump at {}", then_jump.clone());
+
         self.emit_byte(OpCode::OpPop.into());
 
         self.statement();
         let else_jump = self.emit_jump(OpCode::OpJump.into());
 
+        print!("else jump at {}", else_jump.clone()); 
         self.patch_jump(then_jump);
         self.emit_byte(OpCode::OpPop.into());
-
 
         if self.is_match(TokenType::Else) {
             self.statement();
@@ -535,6 +542,7 @@ impl <'a> Compiler<'a> {
         trace!("emit_jump: instruction = {}", instruction.clone());
         self.emit_byte(instruction);
         //placeholder operands
+        // using 2 bytes for jump offset
         self.emit_byte(0xff);
         self.emit_byte(0xff);
         //return the place where we are rn (barring the placeholder operands)
@@ -663,7 +671,7 @@ impl <'a> Compiler<'a> {
 
         // global variables are looked up by name at runtime. so vm needs access to name. cannot put
         // whole string into bytecode so put in chunk's constant array and refer by index.
-        self.make_constant(
+        self.make_constant( 
             Value::ValObject(
                 Object::ObjString(
                     ObjString::from_str(
