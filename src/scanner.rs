@@ -22,7 +22,7 @@ pub enum TokenType {
     And, Else, False, 
     Function, If, Void, Or,
     Emit, Return, True, Create, 
-    While,
+    While, For,
 
     Error, Eof,
 
@@ -228,6 +228,7 @@ impl<'a> Scanner <'a> {
                 match self.source.get(self.start + 1) {
                     Some(b'a') => self.check_keyword(2, "lse", TokenType::False),
                     Some(b'u') => self.check_keyword(2, "nction", TokenType::Function),
+                    Some(b'o') => self.check_keyword(2, "r", TokenType::For),
                     _ => TokenType::Identifier,
                 }
             },

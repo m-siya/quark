@@ -590,6 +590,59 @@ impl <'a> Compiler<'a> {
         self.emit_byte(OpCode::OpPop.into());
     }
 
+    fn for_statement(&mut self) {
+        trace!("for statement");
+        self.begin_scope();
+        self.consume(TokenType::LeftParen, "Expecting '(' after 'for'.");
+        
+        if (self.is_match(TokenType::Semicolon)) {
+            // no condition
+        } else if (self.is_match(TokenType::Create)){
+            self.var_declaration();
+        } else {
+            self.expression_statement();
+        }
+
+        let mut loop_start = self.chunk.code.len();
+        
+        let mut exit_jump = -1;
+
+        if (!self.is_match(TokenType::Semicolon)) {
+            self.expression();
+            self.consume(TokenType::Semicolon, "Expecting ';' after loop condition.");
+
+            //jump out of the loop if condition is false 
+            exit_jump = self.emit_jump(OpCode::OpJumpIfFalse.into()) as isize;
+            self.emit_byte(OpCode::OpPop.into()); // pop condition
+
+        }
+
+        if (!self.is_match(TokenType::RightParen)) {
+            let body_jump = self.emit_jump(OpCode::OpJump.into());
+
+            let increment_start = self.chunk.code.len();
+            self.expression();
+            self.emit_byte(OpCode::OpPop.into());
+
+            self.consume(TokenType::RightParen, "Expecting ')' after for clauses.");
+
+            self.emit_loop(loop_start);
+
+            loop_start = increment_start;
+            self.patch_jump(body_jump);
+        }
+
+        self.statement();
+        self.emit_loop(loop_start);
+
+        if exit_jump != -1 {
+            self.patch_jump(exit_jump as usize);
+            self.emit_byte(OpCode::OpPop.into()); // pop condition
+        }
+
+        self.end_scope();
+    }
+
     /*
         if not startinng valid keyword, then probably an expression statement
     */
@@ -602,6 +655,8 @@ impl <'a> Compiler<'a> {
             self.if_statement();
         } else if self.is_match(TokenType::While){
             self.while_statement();
+        } else if self.is_match(TokenType::For) {
+            self.for_statement();
         } else if self.is_match(TokenType::LeftBrace){
             self.begin_scope();
             self.block();

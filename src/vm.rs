@@ -8,6 +8,7 @@ use crate::value::Value;
 use crate::compiler::Compiler;
 
 use log::debug as log_debug;
+use log::{trace};
 //use crate::compiler::Compiler;
 
 #[derive(Debug)]
@@ -171,7 +172,7 @@ impl VM {
         
         loop {
             // TODO: Put in verbose flag?
-            println!("stack:{:?}", self.stack);
+            trace!("stack:{:?}", self.stack);
 
             debug::disassemble_instruction(chunk, self.ip as u8);
             
@@ -261,9 +262,8 @@ impl VM {
                     self.pop();
                 },
                 OpCode::OpGetLocal => {
-                    println!("Hii");
                     let slot = self.read_byte(chunk);
-                    print!("{:?}", &self.stack[slot as u8 as usize]);
+                   // print!("{:?}", &self.stack[slot as u8 as usize]);
                     self.stack.push(self.stack[slot as u8 as usize].clone())
                 },
                 OpCode::OpSetLocal => {
@@ -308,7 +308,7 @@ impl VM {
                             return InterpretResult::RuntimeError;
                         }
                         Some(_) => {
-                            println!("{:?}", self.stack);
+                          //  println!("{:?}", self.stack);
                             self.globals.insert(name, self.peek(0).clone());
                         }
                     }
